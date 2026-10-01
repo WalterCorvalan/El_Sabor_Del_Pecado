@@ -1,9 +1,9 @@
-const { getStore } = require("@netlify/blobs");
+const { getCatalogStore } = require("./utils/blob-store");
 const { defaultCatalog } = require("./utils/default-catalog");
 
 exports.handler = async () => {
   try {
-    const store = getStore("catalog");
+    const store = getCatalogStore();
     let catalog = await store.get("catalog", { type: "json" });
 
     if (!catalog) {

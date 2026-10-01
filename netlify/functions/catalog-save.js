@@ -1,4 +1,4 @@
-const { getStore } = require("@netlify/blobs");
+const { getCatalogStore } = require("./utils/blob-store");
 const { verifyToken, getBearerToken } = require("./utils/auth");
 
 const MAX_BODY_BYTES = 500 * 1024;
@@ -83,7 +83,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const store = getStore("catalog");
+    const store = getCatalogStore();
     await store.setJSON("catalog", catalog);
     return {
       statusCode: 200,
