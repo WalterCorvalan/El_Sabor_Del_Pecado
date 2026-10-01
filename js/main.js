@@ -3,8 +3,19 @@
 
   const state = {
     catalog: null,
-    cart: [] // { lineId, productId, categoryId, name, price, qty, selections: [{groupName, values:[]}] }
+    cart: [], // { lineId, productId, categoryId, name, price, qty, selections: [{groupName, values:[]}] }
+    expandedCategories: new Set()
   };
+
+  const PRODUCTS_PREVIEW_COUNT = 2;
+
+  function categoryIcon(category) {
+    const key = `${category.id} ${category.name}`.toLowerCase();
+    if (key.includes("empanada")) return "🥟";
+    if (key.includes("plato")) return "🍽️";
+    if (key.includes("sandw") || key.includes("burger") || key.includes("hamburg")) return "🍔";
+    return "🍴";
+  }
 
   const el = {
     catalog: document.getElementById("catalog"),
@@ -36,7 +47,14 @@
     deliveryAddress: document.getElementById("deliveryAddress"),
     sendWhatsapp: document.getElementById("sendWhatsapp"),
 
-    toast: document.getElementById("toast")
+    toast: document.getElementById("toast"),
+
+    stickyCartBar: document.getElementById("stickyCartBar"),
+    stickyCartCount: document.getElementById("stickyCartCount"),
+    stickyCartTotal: document.getElementById("stickyCartTotal"),
+    stickyCartItemsLabel: document.getElementById("stickyCartItemsLabel"),
+    stickyCartIcon: document.getElementById("stickyCartIcon"),
+    stickyCartOpen: document.getElementById("stickyCartOpen")
   };
 
   let selectedPayment = "Efectivo";
@@ -104,8 +122,12 @@
   function renderCategoryTabs() {
     el.categoryTabs.innerHTML = state.catalog.categories
       .map(
-        (cat, i) =>
-          `<button class="category-tab${i === 0 ? " active" : ""}" data-target="${cat.id}">${escapeHtml(cat.name)}</button>`
+        (cat, i) => `
+          <button class="category-tab${i === 0 ? " active" : ""}" data-target="${cat.id}">
+            <span class="pill-icon">${categoryIcon(cat)}</span>
+            <span class="pill-label">${escapeHtml(cat.name)}</span>
+          </button>
+        `
       )
       .join("");
 
@@ -129,12 +151,21 @@
 
     el.catalog.innerHTML = state.catalog.categories
       .map((cat) => {
-        const cards = cat.products
-          .map((p) => productCardHtml(cat, p))
-          .join("");
+        const expanded = state.expandedCategories.has(cat.id);
+        const visibleProducts = expanded ? cat.products : cat.products.slice(0, PRODUCTS_PREVIEW_COUNT);
+        const cards = visibleProducts.map((p) => productCardHtml(cat, p)).join("");
+        const showToggle = cat.products.length > PRODUCTS_PREVIEW_COUNT;
+
         return `
           <section class="category-section" id="${cat.id}">
-            <h3>${escapeHtml(cat.name)}</h3>
+            <div class="section-header">
+              <h3>${escapeHtml(cat.name)}</h3>
+              ${
+                showToggle
+                  ? `<button class="ver-todos" data-toggle-category="${cat.id}">${expanded ? "Ver menos" : "Ver todos"} ›</button>`
+                  : ""
+              }
+            </div>
             <div class="product-grid">${cards || '<p style="color:#9e9e9e;">Sin productos en esta categoría.</p>'}</div>
           </section>
         `;
@@ -144,7 +175,31 @@
     el.catalog.querySelectorAll("[data-product-open]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const { categoryId, productId } = btn.dataset;
-        openProductModal(categoryId, productId);
+        const card = btn.closest(".product-card");
+        const initialQty = card ? Number(card.querySelector(".qty-value")?.textContent) || 1 : 1;
+        openProductModal(categoryId, productId, initialQty);
+      });
+    });
+
+    el.catalog.querySelectorAll("[data-toggle-category]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const catId = btn.dataset.toggleCategory;
+        if (state.expandedCategories.has(catId)) {
+          state.expandedCategories.delete(catId);
+        } else {
+          state.expandedCategories.add(catId);
+        }
+        renderCatalog();
+      });
+    });
+
+    el.catalog.querySelectorAll(".product-card").forEach((card) => {
+      const valueEl = card.querySelector(".qty-value");
+      card.querySelector(".qty-minus")?.addEventListener("click", () => {
+        valueEl.textContent = Math.max(1, Number(valueEl.textContent) - 1);
+      });
+      card.querySelector(".qty-plus")?.addEventListener("click", () => {
+        valueEl.textContent = Number(valueEl.textContent) + 1;
       });
     });
   }
@@ -153,13 +208,18 @@
     const img = product.image || "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=900&q=80";
     return `
       <article class="product-card">
-        <img src="${escapeHtml(img)}" alt="${escapeHtml(product.name)}" loading="lazy" />
-        <div class="product-body">
+        <img class="product-thumb" src="${escapeHtml(img)}" alt="${escapeHtml(product.name)}" loading="lazy" />
+        <div class="product-info">
           <h4>${escapeHtml(product.name)}</h4>
           <p>${escapeHtml(product.description || "")}</p>
-          <div class="product-price">${money(product.price)}</div>
-          <div class="product-actions">
-            <button class="btn-add" data-product-open data-category-id="${category.id}" data-product-id="${product.id}">
+          <div class="product-bottom">
+            <span class="product-price">${money(product.price)}</span>
+            <div class="qty-stepper">
+              <button type="button" class="qty-minus" aria-label="Restar">−</button>
+              <span class="qty-value">1</span>
+              <button type="button" class="qty-plus" aria-label="Sumar">+</button>
+            </div>
+            <button class="btn-add-sm" data-product-open data-category-id="${category.id}" data-product-id="${product.id}">
               Agregar
             </button>
           </div>
@@ -169,12 +229,12 @@
   }
 
   // ---------------- Modal de producto (variantes + cantidad) ----------------
-  function openProductModal(categoryId, productId) {
+  function openProductModal(categoryId, productId, initialQty = 1) {
     const category = state.catalog.categories.find((c) => c.id === categoryId);
     const product = category?.products.find((p) => p.id === productId);
     if (!product) return;
 
-    currentProductContext = { category, product, qty: 1, selections: {} };
+    currentProductContext = { category, product, qty: Math.max(1, initialQty), selections: {} };
 
     el.productModalTitle.textContent = product.name;
 
@@ -212,7 +272,7 @@
         <h4>Cantidad</h4>
         <div class="qty-control">
           <button type="button" id="modalQtyMinus">−</button>
-          <span id="modalQtyValue">1</span>
+          <span id="modalQtyValue">${currentProductContext.qty}</span>
           <button type="button" id="modalQtyPlus">+</button>
         </div>
       </div>
@@ -294,7 +354,12 @@
   }
 
   function renderCartBadge() {
-    el.cartCount.textContent = cartItemCount();
+    const count = cartItemCount();
+    el.cartCount.textContent = count;
+    el.stickyCartCount.textContent = count;
+    el.stickyCartTotal.textContent = money(cartTotal());
+    el.stickyCartItemsLabel.textContent = `${count} item${count === 1 ? "" : "s"}`;
+    el.stickyCartBar.classList.toggle("hidden", count === 0);
   }
 
   function renderCartModal() {
@@ -329,10 +394,13 @@
     el.cartTotal.textContent = money(cartTotal());
   }
 
-  el.cartButton.addEventListener("click", () => {
+  function openCartModal() {
     renderCartModal();
     el.cartModalBackdrop.classList.add("open");
-  });
+  }
+  el.cartButton.addEventListener("click", openCartModal);
+  el.stickyCartOpen.addEventListener("click", openCartModal);
+  el.stickyCartIcon.addEventListener("click", openCartModal);
   el.cartModalClose.addEventListener("click", () => el.cartModalBackdrop.classList.remove("open"));
 
   // ---------------- Checkout ----------------
