@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin | El Sabor del Pecado</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .admin-wrap { max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
+    .admin-card { background: var(--negro-suave); border-radius: var(--radio); padding: 18px; margin-bottom: 18px; box-shadow: var(--sombra); }
+    .admin-card h3 { margin-top: 0; color: var(--dorado); }
+    .admin-grid { display: grid; gap: 14px; }
+    .admin-product { border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 14px; }
+    .admin-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .admin-row > * { flex: 1; min-width: 140px; }
+    .admin-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-danger { background: var(--rojo-oscuro); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 700; }
+    .btn-small { padding: 6px 12px; font-size: 13px; }
+    .login-screen { max-width: 360px; margin: 80px auto; text-align: center; }
+    .hidden { display: none !important; }
+    .variant-admin { background: var(--negro); border-radius: 10px; padding: 10px; margin-top: 8px; }
+    .admin-msg { font-size: 13px; margin-top: 8px; }
+    .admin-msg.error { color: #ff6b6b; }
+    .admin-msg.ok { color: #7ee787; }
+    label { font-size: 12px; color: var(--gris); display: block; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <span class="flame">🔥</span>
+      <h1>Admin — El Sabor del Pecado</h1>
+      <small>PANEL PRIVADO</small>
+    </div>
+    <button class="btn-outline hidden" id="logoutBtn" style="width:auto;">Salir</button>
+  </header>
+
+  <div class="login-screen" id="loginScreen">
+    <div class="admin-card">
+      <h3>Ingresar</h3>
+      <div class="field">
+        <label for="adminPassword">Contraseña</label>
+        <input type="password" id="adminPassword" placeholder="Contraseña de administrador" />
+      </div>
+      <button class="btn-gold" id="loginBtn" style="width:100%;">Ingresar</button>
+      <div class="admin-msg error" id="loginMsg"></div>
+    </div>
+  </div>
+
+  <div class="admin-wrap hidden" id="adminPanel">
+    <div class="admin-card">
+      <h3>Configuración general</h3>
+      <div class="field">
+        <label for="whatsappNumber">Número de WhatsApp (solo dígitos, con código de país. Ej: 5491122334455)</label>
+        <input type="text" id="whatsappNumber" />
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <h3>Categorías</h3>
+      <div id="categoriesList" class="admin-grid"></div>
+      <div class="admin-row" style="margin-top:12px;">
+        <input type="text" id="newCategoryName" placeholder="Nombre de nueva categoría" />
+        <button class="btn-add" id="addCategoryBtn" style="flex:0 0 auto;">+ Agregar categoría</button>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <h3>Guardar cambios</h3>
+      <button class="btn-gold" id="saveBtn">Guardar catálogo</button>
+      <div class="admin-msg" id="saveMsg"></div>
+    </div>
+  </div>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>
