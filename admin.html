@@ -5,25 +5,83 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin | El Sabor del Pecado</title>
   <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
   <style>
     .admin-wrap { max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
-    .admin-card { background: var(--negro-suave); border-radius: var(--radio); padding: 18px; margin-bottom: 18px; box-shadow: var(--sombra); }
-    .admin-card h3 { margin-top: 0; color: var(--dorado); }
+    .admin-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-borde);
+      border-radius: var(--radio);
+      padding: 18px;
+      margin-bottom: 18px;
+      box-shadow: var(--card-sombra);
+    }
+    .admin-card h3 {
+      margin-top: 0;
+      font-family: var(--font-display);
+      font-weight: 400;
+      letter-spacing: 0.3px;
+      font-size: 19px;
+      color: var(--rojo);
+    }
     .admin-grid { display: grid; gap: 14px; }
-    .admin-product { border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 14px; }
+    .admin-product {
+      background: var(--bg);
+      border: 1px solid var(--card-borde);
+      border-radius: 12px;
+      padding: 14px;
+    }
     .admin-row { display: flex; gap: 10px; flex-wrap: wrap; }
     .admin-row > * { flex: 1; min-width: 140px; }
     .admin-actions { display: flex; gap: 8px; margin-top: 10px; }
     .btn-danger { background: var(--rojo-oscuro); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 700; }
+    .btn-danger:hover { background: #6e0000; }
     .btn-small { padding: 6px 12px; font-size: 13px; }
-    .login-screen { max-width: 360px; margin: 80px auto; text-align: center; }
+    .login-screen { max-width: 360px; margin: 80px auto; padding: 0 16px; text-align: center; }
     .hidden { display: none !important; }
-    .variant-admin { background: var(--negro); border-radius: 10px; padding: 10px; margin-top: 8px; }
-    .admin-msg { font-size: 13px; margin-top: 8px; }
-    .admin-msg.error { color: #ff6b6b; }
-    .admin-msg.ok { color: #7ee787; }
-    label { font-size: 12px; color: var(--gris); display: block; margin-bottom: 4px; }
+    .variant-admin {
+      background: #fff;
+      border: 1px solid var(--card-borde);
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 8px;
+    }
+    .admin-msg { font-size: 13px; margin-top: 8px; min-height: 16px; }
+    .admin-msg.error { color: var(--rojo-oscuro); font-weight: 700; }
+    .admin-msg.ok { color: #2e7d32; font-weight: 700; }
+
+    .admin-wrap label,
+    .login-screen label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .admin-wrap input[type="text"],
+    .admin-wrap input[type="tel"],
+    .admin-wrap textarea,
+    .login-screen input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--card-borde);
+      background: #fff;
+      color: var(--text);
+      font-size: 14px;
+      font-family: var(--font-body);
+    }
+
+    .admin-wrap input:focus,
+    .login-screen input:focus,
+    .admin-wrap textarea:focus {
+      outline: none;
+      border-color: var(--rojo);
+    }
   </style>
 </head>
 <body>
