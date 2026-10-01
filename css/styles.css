@@ -15,8 +15,11 @@
   --card-bg: #ffffff;
   --text: #201a17;
   --text-muted: #8a8078;
-  --card-sombra: 0 4px 14px rgba(32, 26, 23, 0.1);
+  --card-sombra: 0 10px 22px rgba(32, 26, 23, 0.14);
   --card-borde: #f1e6d8;
+
+  --font-display: "Lilita One", "Segoe UI", sans-serif;
+  --font-body: "Nunito", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 * {
@@ -29,7 +32,7 @@ html {
 
 body {
   margin: 0;
-  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
@@ -58,11 +61,26 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px 20px;
+  padding: 14px 16px 24px;
   background:
-    linear-gradient(100deg, rgba(0, 0, 0, 0.85) 0%, transparent 35%),
-    linear-gradient(160deg, var(--rojo) 0%, var(--rojo-oscuro) 70%);
-  clip-path: polygon(0 0, 100% 0, 100% 88%, 92% 100%, 70% 90%, 40% 100%, 12% 88%, 0 96%);
+    radial-gradient(circle at 85% 15%, rgba(255, 193, 7, 0.25), transparent 45%),
+    linear-gradient(100deg, rgba(0, 0, 0, 0.9) 0%, transparent 38%),
+    linear-gradient(160deg, var(--rojo) 0%, var(--rojo-oscuro) 75%);
+  clip-path: polygon(
+    0 0, 100% 0, 100% 82%, 94% 92%, 86% 80%, 76% 96%, 64% 82%,
+    52% 94%, 40% 80%, 28% 96%, 16% 84%, 6% 94%, 0 86%
+  );
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.site-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
 }
 
 .menu-toggle {
@@ -92,19 +110,20 @@ button {
 
 .brand h1 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 400;
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--blanco);
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 .brand small {
   color: var(--dorado);
   font-size: 10px;
-  letter-spacing: 2px;
-  font-weight: 700;
+  letter-spacing: 3px;
+  font-weight: 800;
 }
 
 .cart-button {
@@ -221,15 +240,34 @@ button {
   transform: rotate(20deg);
 }
 
+.hero::after {
+  content: "";
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 70px;
+  height: 46px;
+  background-image:
+    radial-gradient(ellipse at 10% 50%, var(--dorado) 0 6px, transparent 7px),
+    radial-gradient(ellipse at 45% 20%, var(--dorado) 0 4px, transparent 5px),
+    radial-gradient(ellipse at 75% 60%, var(--dorado) 0 5px, transparent 6px),
+    radial-gradient(ellipse at 95% 10%, var(--dorado) 0 3px, transparent 4px);
+  opacity: 0.8;
+  transform: rotate(-10deg);
+  pointer-events: none;
+}
+
 .hero-tagline {
   position: relative;
   text-align: center;
   color: var(--dorado);
-  font-weight: 800;
-  font-size: 12px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 14px;
   letter-spacing: 3px;
   text-transform: uppercase;
   margin: 4px 0 12px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 .hero-media {
@@ -254,12 +292,13 @@ button {
   transform: rotate(-4deg);
   background: var(--dorado);
   color: var(--negro);
-  font-weight: 900;
-  font-size: 17px;
-  line-height: 1.15;
-  padding: 10px 18px 10px 22px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 1.2;
+  padding: 12px 20px 12px 24px;
   text-transform: uppercase;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5);
   clip-path: polygon(0 10%, 97% 0, 100% 85%, 4% 100%);
 }
 
@@ -303,8 +342,14 @@ button {
 
 .category-tab.active .pill-icon {
   background: var(--rojo);
-  border-color: var(--rojo);
+  border-color: var(--dorado);
   color: var(--blanco);
+  box-shadow: 0 6px 14px rgba(198, 40, 40, 0.4);
+  transform: scale(1.06);
+}
+
+.category-tab .pill-icon {
+  transition: transform 0.15s ease;
 }
 
 .category-tab.active .pill-label {
@@ -326,15 +371,17 @@ button {
 .category-section h3 {
   color: var(--text);
   margin: 0;
-  font-size: 19px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
 }
 
 .ver-todos {
   background: none;
   border: none;
   color: var(--rojo);
-  font-weight: 700;
+  font-weight: 800;
   font-size: 13px;
 }
 
@@ -345,21 +392,40 @@ button {
 }
 
 .product-card {
+  position: relative;
   background: var(--card-bg);
-  border-radius: var(--radio);
+  border-radius: 16px;
   box-shadow: var(--card-sombra);
   border: 1px solid var(--card-borde);
   display: flex;
   gap: 12px;
   padding: 10px;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.product-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(var(--rojo), var(--dorado));
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(32, 26, 23, 0.18);
 }
 
 .product-thumb {
-  width: 84px;
-  height: 84px;
+  width: 86px;
+  height: 86px;
   flex: none;
   border-radius: 12px;
   object-fit: cover;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
 }
 
 .product-info {
@@ -372,7 +438,10 @@ button {
 
 .product-info h4 {
   margin: 0;
-  font-size: 15px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 17px;
+  letter-spacing: 0.2px;
   color: var(--text);
 }
 
@@ -462,9 +531,11 @@ button {
   border: none;
   padding: 12px 18px;
   border-radius: 999px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  box-shadow: 0 6px 14px rgba(255, 160, 0, 0.35);
 }
 
 .btn-gold:hover {
@@ -492,8 +563,17 @@ button {
   gap: 12px;
   padding: 10px 12px;
   border-radius: 999px;
-  background: linear-gradient(100deg, var(--negro) 0%, var(--rojo-oscuro) 60%, var(--rojo) 100%);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  background:
+    radial-gradient(circle at 90% 20%, rgba(255, 193, 7, 0.25), transparent 50%),
+    linear-gradient(100deg, var(--negro) 0%, var(--rojo-oscuro) 55%, var(--rojo) 100%);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 193, 7, 0.25);
+}
+
+.sticky-cart-info strong {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.3px;
 }
 
 .sticky-cart-bar.hidden {
@@ -586,6 +666,10 @@ button {
 
 .modal-header h3 {
   margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.3px;
+  font-size: 20px;
   color: var(--dorado);
 }
 
@@ -710,8 +794,10 @@ button {
 .cart-total-row {
   display: flex;
   justify-content: space-between;
-  font-size: 18px;
-  font-weight: 800;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 400;
   padding: 14px 0;
   border-top: 1px dashed rgba(255, 255, 255, 0.15);
 }
