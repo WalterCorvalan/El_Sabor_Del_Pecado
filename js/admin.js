@@ -118,7 +118,7 @@
           <input type="text" class="cat-name-input" value="${escapeAttr(cat.name)}" data-cat-index="${catIndex}" />
           <button class="btn-danger btn-small" data-remove-category="${catIndex}">Eliminar categoría</button>
         </div>
-        <div class="admin-grid" style="margin-top:12px;">${products || "<p style='color:#9e9e9e;'>Sin productos.</p>"}</div>
+        <div class="admin-grid" style="margin-top:12px;">${products || "<p style='color:var(--text-muted);'>Sin productos.</p>"}</div>
         <button class="btn-add" style="margin-top:10px;" data-add-product="${catIndex}">+ Agregar producto</button>
       </div>
     `;
@@ -151,8 +151,8 @@
         </div>
 
         <div class="variant-admin">
-          <strong style="color:var(--dorado);font-size:13px;">Variantes</strong>
-          ${variants || "<p style='color:#9e9e9e;font-size:12px;'>Sin variantes.</p>"}
+          <strong style="color:var(--rojo);font-size:13px;">Variantes</strong>
+          ${variants || "<p style='color:var(--text-muted);font-size:12px;'>Sin variantes.</p>"}
           <button class="btn-outline btn-small" style="margin-top:8px;" data-add-variant>+ Agregar variante</button>
         </div>
 
@@ -165,7 +165,7 @@
 
   function variantHtml(catIndex, pIndex, variant, vIndex) {
     return `
-      <div class="variant-admin" style="border:1px dashed rgba(255,255,255,0.15);" data-variant-index="${vIndex}">
+      <div class="variant-admin" style="border:1px dashed var(--card-borde);" data-variant-index="${vIndex}">
         <div class="admin-row">
           <div>
             <label>Nombre de la variante</label>
