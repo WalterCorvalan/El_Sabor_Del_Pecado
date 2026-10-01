@@ -1,0 +1,15 @@
+{
+  "name": "el-sabor-del-pecado",
+  "version": "1.0.0",
+  "description": "Sitio de pedidos online para delivery de comida casera - El Sabor del Pecado",
+  "private": true,
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  }
+}

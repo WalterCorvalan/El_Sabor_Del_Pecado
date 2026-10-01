@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>El Sabor del Pecado | Comida Casera</title>
+  <meta name="description" content="Pedí online hamburguesas, platos y empanadas caseras de El Sabor del Pecado." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔥</text></svg>" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="overlay" id="overlay"></div>
+
+  <nav class="side-nav" id="sideNav">
+    <button class="side-nav-close" id="sideNavClose" aria-label="Cerrar menú">&times;</button>
+    <h2>🔥 El Sabor del Pecado</h2>
+    <ul>
+      <li><a href="#sandwiches" class="nav-link">Sándwiches</a></li>
+      <li><a href="#platos" class="nav-link">Platos</a></li>
+      <li><a href="#empanadas" class="nav-link">Empanadas</a></li>
+    </ul>
+  </nav>
+
+  <header class="site-header">
+    <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">&#9776;</button>
+    <div class="brand">
+      <span class="flame">🔥</span>
+      <h1>El Sabor del Pecado</h1>
+      <small>COMIDA CASERA</small>
+    </div>
+    <button class="cart-button" id="cartButton" aria-label="Ver carrito">
+      🛒
+      <span class="cart-count" id="cartCount">0</span>
+    </button>
+  </header>
+
+  <section class="hero">
+    <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80" alt="Hamburguesa jugosa" />
+    <div class="hero-content">
+      <h2>¡El verdadero <span>sabor</span> del pecado!</h2>
+      <p>Hamburguesas, platos y empanadas caseras, directo a tu puerta.</p>
+    </div>
+  </section>
+
+  <nav class="category-tabs" id="categoryTabs"></nav>
+
+  <main class="catalog" id="catalog">
+    <div class="empty-state" id="loadingState">Cargando el menú...</div>
+  </main>
+
+  <footer class="site-footer">
+    🔥 El Sabor del Pecado — Pedidos por WhatsApp
+  </footer>
+
+  <!-- Modal variantes de producto -->
+  <div class="modal-backdrop" id="productModalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="productModalTitle">Producto</h3>
+        <button class="modal-close" id="productModalClose">&times;</button>
+      </div>
+      <div id="productModalBody"></div>
+      <button class="btn-gold" id="productModalConfirm" style="width:100%;margin-top:10px;">Agregar al carrito</button>
+    </div>
+  </div>
+
+  <!-- Modal carrito -->
+  <div class="modal-backdrop" id="cartModalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Tu pedido</h3>
+        <button class="modal-close" id="cartModalClose">&times;</button>
+      </div>
+      <div class="cart-items" id="cartItems"></div>
+      <div class="cart-total-row">
+        <span>Total</span>
+        <span id="cartTotal">$0</span>
+      </div>
+      <button class="btn-gold" id="goToCheckout" style="width:100%;">Confirmar pedido</button>
+    </div>
+  </div>
+
+  <!-- Modal checkout -->
+  <div class="modal-backdrop" id="checkoutModalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Confirmar pedido</h3>
+        <button class="modal-close" id="checkoutModalClose">&times;</button>
+      </div>
+
+      <div class="checkout-summary" id="checkoutSummary"></div>
+
+      <div class="field">
+        <label for="deliveryAddress">Dirección de entrega</label>
+        <textarea id="deliveryAddress" rows="2" placeholder="Calle, número, piso/depto, referencias..."></textarea>
+      </div>
+
+      <div class="field">
+        <label>Medio de pago</label>
+        <div class="payment-options">
+          <button type="button" class="payment-option selected" data-payment="Efectivo">💵 Efectivo</button>
+          <button type="button" class="payment-option" data-payment="Transferencia">🏦 Transferencia</button>
+        </div>
+      </div>
+
+      <div class="cart-total-row">
+        <span>Total</span>
+        <span id="checkoutTotal">$0</span>
+      </div>
+
+      <button class="btn-gold" id="sendWhatsapp" style="width:100%;">Enviar pedido por WhatsApp</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
