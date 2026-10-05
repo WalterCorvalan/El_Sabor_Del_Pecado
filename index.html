@@ -19,31 +19,33 @@
     <h2>🔥 El Sabor del Pecado</h2>
     <ul>
       <li><a href="#sandwiches" class="nav-link">Sándwiches</a></li>
-      <li><a href="#platos" class="nav-link">Platos</a></li>
+      <li><a href="#al-plato" class="nav-link">Al Plato</a></li>
       <li><a href="#empanadas" class="nav-link">Empanadas</a></li>
+      <li><a href="#bebidas" class="nav-link">Bebidas</a></li>
     </ul>
   </nav>
 
-  <header class="site-header">
-    <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">&#9776;</button>
-    <div class="brand">
-      <span class="flame">🔥</span>
-      <h1>El Sabor del Pecado</h1>
-      <small>COMIDA CASERA</small>
+  <header class="site-header hero-banner">
+    <div class="header-top">
+      <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">&#9776;</button>
+      <button class="cart-button" id="cartButton" aria-label="Ver carrito">
+        🛒
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
     </div>
-    <button class="cart-button" id="cartButton" aria-label="Ver carrito">
-      🛒
-      <span class="cart-count" id="cartCount">0</span>
-    </button>
-  </header>
 
-  <section class="hero">
-    <div class="hero-tagline">Hamburguesas · Platos · Empanadas</div>
-    <div class="hero-media">
-      <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80" alt="Hamburguesa jugosa con papas" />
-      <div class="hero-ribbon">No inventamos nada,<br>solo somos distintos</div>
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <div class="brand">
+          <h1>El Sabor<br>del Pecado</h1>
+          <small>COMIDA CASERA</small>
+        </div>
+        <p class="hero-tags">Sándwiches<br>Al&nbsp;Plato&nbsp;·&nbsp;Empanadas&nbsp;·&nbsp;Bebidas</p>
+        <div class="hero-ribbon">No inventamos nada,<br>solo somos distintos</div>
+      </div>
+      <img class="hero-image" src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80" alt="Hamburguesa jugosa con papas" />
     </div>
-  </section>
+  </header>
 
   <nav class="category-tabs" id="categoryTabs"></nav>
 
