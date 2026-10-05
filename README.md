@@ -5,11 +5,13 @@ Sitio estático (HTML/CSS/JS vanilla) + Netlify Functions, pensado para desplega
 
 ## Funcionalidad
 
-- Catálogo por categorías (Sándwiches, Platos, Empanadas) con fotos, variantes (tipo de pan,
-  aderezos, acompañamiento, cocción) y selector de cantidad.
+- Catálogo por categorías (Sándwiches, Al Plato, Empanadas, Bebidas, etc.) con fotos, variantes
+  (tipo de pan, guarnición, cocción, etc.) y selector de cantidad.
 - Carrito con varios productos a la vez, total en tiempo real.
-- Checkout con dirección de entrega y medio de pago (Efectivo / Transferencia), que arma el
-  pedido y lo envía por WhatsApp (`wa.me`), sin pasarela de pago.
+- Checkout con dirección de entrega, teléfono de contacto y medio de pago (Efectivo /
+  Transferencia / Mercado Pago). Con Efectivo o Transferencia arma el pedido y lo manda por
+  WhatsApp (`wa.me`); con Mercado Pago redirige a Checkout Pro, y al volver pago el cliente
+  confirma el envío del pedido por WhatsApp con una nota de "ya pagado".
 - Panel `/admin.html` protegido por contraseña para editar productos, categorías y el número de
   WhatsApp, sin tocar código. Los datos se guardan en **Netlify Blobs**.
 
@@ -19,13 +21,15 @@ Sitio estático (HTML/CSS/JS vanilla) + Netlify Functions, pensado para desplega
 index.html            sitio público
 admin.html             panel de administración
 css/styles.css
-js/main.js             lógica del carrito y el catálogo
+js/main.js             lógica del carrito, checkout y pago con Mercado Pago
 js/admin.js             lógica del panel admin
 netlify/functions/
   catalog-get.js        GET público del catálogo (lo siembra con datos de ejemplo la 1ª vez)
   catalog-save.js        guarda el catálogo (requiere token de admin)
   admin-login.js          valida la contraseña y devuelve un token temporal (2hs)
+  create-payment.js        crea una preferencia de pago en Mercado Pago (Checkout Pro)
   utils/auth.js            firma/verifica el token (HMAC con ADMIN_PASSWORD)
+  utils/blob-store.js      conexión a Netlify Blobs (con respaldo manual siteID/token)
   utils/default-catalog.js  catálogo de ejemplo inicial
 ```
 
@@ -33,12 +37,16 @@ netlify/functions/
 
 Configurar en Netlify (Site settings → Environment variables):
 
-| Variable         | Descripción                                      |
-|------------------|---------------------------------------------------|
-| `ADMIN_PASSWORD` | Contraseña para entrar a `/admin.html`             |
+| Variable                   | Descripción                                                        |
+|-----------------------------|---------------------------------------------------------------------|
+| `ADMIN_PASSWORD`            | Contraseña para entrar a `/admin.html`                               |
+| `NETLIFY_SITE_ID`            | ID del sitio (ver "Project overview"). Respaldo si Blobs no recibe contexto automático |
+| `NETLIFY_BLOBS_TOKEN`         | Personal access token de Netlify. Mismo respaldo que `NETLIFY_SITE_ID` |
+| `MERCADOPAGO_ACCESS_TOKEN`     | Access Token de Mercado Pago (mercadopago.com.ar/developers/panel). Si empieza con `TEST-` se usa el checkout de prueba (sandbox) |
 
-No hace falta configurar nada más: Netlify Blobs funciona automáticamente en cualquier sitio
-desplegado en Netlify (no requiere credenciales adicionales).
+En teoría Netlify Blobs se configura solo (`NETLIFY_SITE_ID`/`NETLIFY_BLOBS_TOKEN` son solo
+necesarias si el contexto automático falla con `MissingBlobsEnvironmentError`, como pasó en este
+proyecto en la plataforma nueva de Netlify — ver `utils/blob-store.js`).
 
 ## Deploy en Netlify
 
@@ -63,6 +71,7 @@ logueado/linkeado al sitio para que Netlify Blobs funcione localmente).
 
 ## Fuera de alcance (por ahora)
 
-- Pasarela de pago online (Mercado Pago u otra).
-- Historial de pedidos: el pedido solo se envía por WhatsApp, no queda guardado en ningún lado.
+- Historial de pedidos: el pedido solo se envía por WhatsApp, no queda guardado en ningún lado
+  (incluso pagando con Mercado Pago, la confirmación depende de que el cliente toque el botón de
+  WhatsApp al volver del pago — no hay webhook ni base de datos de pedidos).
 - Dominio propio: queda en `*.netlify.app`.

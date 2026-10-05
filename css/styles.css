@@ -833,19 +833,20 @@ button {
 }
 
 .payment-options {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 10px;
 }
 
 .payment-option {
-  flex: 1;
   text-align: center;
-  padding: 12px;
+  padding: 10px 6px;
   border-radius: 12px;
   border: 2px solid rgba(255, 255, 255, 0.15);
   background: var(--negro);
   color: var(--blanco);
   font-weight: 700;
+  font-size: 13px;
 }
 
 .payment-option.selected {

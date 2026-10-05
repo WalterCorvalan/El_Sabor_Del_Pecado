@@ -41,7 +41,7 @@
     <div class="hero-tagline">Hamburguesas · Platos · Empanadas</div>
     <div class="hero-media">
       <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80" alt="Hamburguesa jugosa con papas" />
-      <div class="hero-ribbon">¡El verdadero<br>sabor del pecado!</div>
+      <div class="hero-ribbon">No inventamos nada,<br>solo somos distintos</div>
     </div>
   </section>
 
@@ -111,10 +111,16 @@
       </div>
 
       <div class="field">
+        <label for="customerPhone">Tu teléfono de contacto</label>
+        <input type="tel" id="customerPhone" placeholder="Ej: 11 2233 4455" />
+      </div>
+
+      <div class="field">
         <label>Medio de pago</label>
         <div class="payment-options">
           <button type="button" class="payment-option selected" data-payment="Efectivo">💵 Efectivo</button>
           <button type="button" class="payment-option" data-payment="Transferencia">🏦 Transferencia</button>
+          <button type="button" class="payment-option" data-payment="Mercado Pago">💳 Mercado Pago</button>
         </div>
       </div>
 
@@ -124,6 +130,19 @@
       </div>
 
       <button class="btn-gold" id="sendWhatsapp" style="width:100%;">Enviar pedido por WhatsApp</button>
+    </div>
+  </div>
+
+  <!-- Modal confirmación de pago (vuelta de Mercado Pago) -->
+  <div class="modal-backdrop" id="paymentResultModalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="paymentResultTitle">Pago</h3>
+        <button class="modal-close" id="paymentResultClose">&times;</button>
+      </div>
+      <div class="checkout-summary" id="paymentResultSummary"></div>
+      <p id="paymentResultMessage" style="color:#d8cfc5;font-size:14px;"></p>
+      <button class="btn-gold" id="paymentResultWhatsapp" style="width:100%;">Avisar al local por WhatsApp</button>
     </div>
   </div>
 
