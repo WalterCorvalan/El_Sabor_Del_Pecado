@@ -3,7 +3,7 @@
 // Ojo: esto SOLO se usa si Blobs todavía no tiene ningún catálogo guardado. Si el
 // sitio ya está en producción con datos cargados, cambiar este archivo no actualiza
 // el catálogo en vivo — eso se edita siempre desde /admin.html.
-// Los precios en 0 están pendientes de cargar.
+// Los precios son de referencia (placeholder) hasta que se carguen los reales.
 
 const IMG_SANDWICH =
   "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80";
@@ -41,8 +41,8 @@ function coccionVariant() {
   };
 }
 
-function product(id, name, description, image, variants = []) {
-  return { id, name, description, price: 0, image, variants };
+function product(id, name, description, image, variants = [], price = 0) {
+  return { id, name, description, price, image, variants };
 }
 
 function defaultCatalog() {
@@ -57,31 +57,41 @@ function defaultCatalog() {
             "sandwich-vacio",
             "Vacío especial de autor",
             "Vacío de ternera horneado a lenta cocción en reducción de vino tinto desmechado con hortalizas de estación y hierbas aromáticas, y lluvia de queso provolone.",
-            IMG_SANDWICH
+            IMG_SANDWICH,
+            [],
+            7000
           ),
           product(
             "sandwich-pollo-funghi",
             "Pollo al Funghi",
             "Pechugas de pollo doradas y desmechadas en salsa de champiñones, portobellos, verdeo, manteca y crema.",
-            IMG_SANDWICH
+            IMG_SANDWICH,
+            [],
+            7000
           ),
           product(
             "sandwich-bondiola-barbacoa",
             "Bondiola a la Barbacoa",
             "Bondiola marinada y cocida en reducción de cerveza negra, ajo, salsa barbacoa y rub seco de pimentón.",
-            IMG_SANDWICH
+            IMG_SANDWICH,
+            [],
+            7000
           ),
           product(
             "sandwich-osobuco-malbec",
             "Osobuco al Malbec",
             "Osobuco al disco cocido en vino Malbec, entre cebollas, zanahoria, ajo, apio, pimentón y caldo de verduras, desmechado.",
-            IMG_SANDWICH
+            IMG_SANDWICH,
+            [],
+            7000
           ),
           product(
             "sandwich-bondiola-honey-mustard",
             "Bondiola Honey Mustard",
             "Bondiola cocida a baja temperatura durante varias horas con cebollas caramelizadas, mostaza, miel y finas hierbas.",
-            IMG_SANDWICH
+            IMG_SANDWICH,
+            [],
+            7000
           )
         ]
       },
@@ -94,35 +104,40 @@ function defaultCatalog() {
             "Vacío especial de autor",
             "Lonjas de vacío de ternera horneado a lenta cocción en reducción de vino tinto con hortalizas de estación y hierbas aromáticas. Guarnición a elección.",
             IMG_PLATO,
-            [guarnicionVariant()]
+            [guarnicionVariant()],
+            9000
           ),
           product(
             "plato-pollo-funghi",
             "Pollo al Funghi",
             "Pollo deshuesado dorado en salsa de champiñones, portobellos, verdeo, manteca y crema. Guarnición a elección.",
             IMG_PLATO,
-            [guarnicionVariant()]
+            [guarnicionVariant()],
+            9000
           ),
           product(
             "plato-bondiola-barbacoa",
             "Bondiola a la Barbacoa",
             "Rodajas de bondiola marinada y cocida en reducción de cerveza negra, ajo, salsa barbacoa y rub seco de pimentón. Guarnición a elección.",
             IMG_PLATO,
-            [guarnicionVariant()]
+            [guarnicionVariant()],
+            9000
           ),
           product(
             "plato-osobuco-malbec",
             "Osobuco al Malbec",
             "Rodajas de osobuco al disco cocido en vino Malbec, entre cebollas, zanahoria, ajo, apio, pimentón y caldo de verduras. Guarnición a elección.",
             IMG_PLATO,
-            [guarnicionVariant()]
+            [guarnicionVariant()],
+            9000
           ),
           product(
             "plato-bondiola-honey-mustard",
             "Bondiola Honey Mustard",
             "Rodajas de bondiola cocida a baja temperatura durante varias horas con cebollas caramelizadas, mostaza, miel y finas hierbas. Guarnición a elección.",
             IMG_PLATO,
-            [guarnicionVariant()]
+            [guarnicionVariant()],
+            9000
           )
         ]
       },
@@ -135,35 +150,40 @@ function defaultCatalog() {
             "Empanada de Vacío braseado al vino tinto",
             "Empanada gourmet de vacío braseado al vino tinto.",
             IMG_EMPANADA,
-            [coccionVariant()]
+            [coccionVariant()],
+            1500
           ),
           product(
             "empanada-pollo-funghi",
             "Empanada de Pollo al Funghi",
             "Empanada gourmet de pollo al funghi.",
             IMG_EMPANADA,
-            [coccionVariant()]
+            [coccionVariant()],
+            1500
           ),
           product(
             "empanada-bondiola-barbacoa",
             "Empanada de Bondiola a la Barbacoa",
             "Empanada gourmet de bondiola a la barbacoa.",
             IMG_EMPANADA,
-            [coccionVariant()]
+            [coccionVariant()],
+            1500
           ),
           product(
             "empanada-osobuco-malbec",
             "Empanada de Osobuco al Malbec",
             "Empanada gourmet de osobuco al Malbec.",
             IMG_EMPANADA,
-            [coccionVariant()]
+            [coccionVariant()],
+            1500
           ),
           product(
             "empanada-bondiola-honey-mustard",
             "Empanada de Bondiola Honey Mustard",
             "Empanada gourmet de bondiola honey mustard.",
             IMG_EMPANADA,
-            [coccionVariant()]
+            [coccionVariant()],
+            1500
           )
         ]
       },
@@ -171,11 +191,11 @@ function defaultCatalog() {
         id: "dips",
         name: "Dips de Salsas",
         products: [
-          product("dip-glase-miel-mostaza", "Glase de miel y mostaza", "Dip de glase de miel y mostaza.", IMG_DIP),
-          product("dip-barbacoa", "Barbacoa", "Dip de salsa barbacoa.", IMG_DIP),
-          product("dip-mayo-tabasco", "Mayo aliñada al Tabasco", "Dip de mayonesa aliñada al Tabasco.", IMG_DIP),
-          product("dip-honey-mustard", "Honey Mustard", "Dip de honey mustard.", IMG_DIP),
-          product("dip-alioli-ciboulette", "Alioli con ciboulette", "Dip de alioli con ciboulette.", IMG_DIP)
+          product("dip-glase-miel-mostaza", "Glase de miel y mostaza", "Dip de glase de miel y mostaza.", IMG_DIP, [], 800),
+          product("dip-barbacoa", "Barbacoa", "Dip de salsa barbacoa.", IMG_DIP, [], 800),
+          product("dip-mayo-tabasco", "Mayo aliñada al Tabasco", "Dip de mayonesa aliñada al Tabasco.", IMG_DIP, [], 800),
+          product("dip-honey-mustard", "Honey Mustard", "Dip de honey mustard.", IMG_DIP, [], 800),
+          product("dip-alioli-ciboulette", "Alioli con ciboulette", "Dip de alioli con ciboulette.", IMG_DIP, [], 800)
         ]
       },
       {
@@ -195,7 +215,8 @@ function defaultCatalog() {
                 required: true,
                 options: ["Coca-Cola", "Coca-Cola Zero", "Sprite", "Fanta"]
               }
-            ]
+            ],
+            2000
           ),
           product(
             "cerveza",
@@ -210,7 +231,8 @@ function defaultCatalog() {
                 required: true,
                 options: ["Stella Artois", "Heineken"]
               }
-            ]
+            ],
+            3000
           )
         ]
       }
