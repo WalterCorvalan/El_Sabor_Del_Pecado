@@ -63,7 +63,13 @@
     stickyCartTotal: document.getElementById("stickyCartTotal"),
     stickyCartItemsLabel: document.getElementById("stickyCartItemsLabel"),
     stickyCartIcon: document.getElementById("stickyCartIcon"),
-    stickyCartOpen: document.getElementById("stickyCartOpen")
+    stickyCartOpen: document.getElementById("stickyCartOpen"),
+
+    miniHeader: document.getElementById("miniHeader"),
+    miniMenuToggle: document.getElementById("miniMenuToggle"),
+    miniCartButton: document.getElementById("miniCartButton"),
+    miniCartCount: document.getElementById("miniCartCount"),
+    heroBanner: document.querySelector(".hero-banner")
   };
 
   let selectedPayment = "Efectivo";
@@ -99,6 +105,7 @@
     el.overlay.classList.remove("open");
   }
   el.menuToggle.addEventListener("click", openSideNav);
+  el.miniMenuToggle.addEventListener("click", openSideNav);
   el.sideNavClose.addEventListener("click", closeSideNav);
   el.overlay.addEventListener("click", () => {
     closeSideNav();
@@ -368,6 +375,7 @@
   function renderCartBadge() {
     const count = cartItemCount();
     el.cartCount.textContent = count;
+    el.miniCartCount.textContent = count;
     el.stickyCartCount.textContent = count;
     el.stickyCartTotal.textContent = money(cartTotal());
     el.stickyCartItemsLabel.textContent = `${count} item${count === 1 ? "" : "s"}`;
@@ -411,6 +419,7 @@
     el.cartModalBackdrop.classList.add("open");
   }
   el.cartButton.addEventListener("click", openCartModal);
+  el.miniCartButton.addEventListener("click", openCartModal);
   el.stickyCartOpen.addEventListener("click", openCartModal);
   el.stickyCartIcon.addEventListener("click", openCartModal);
   el.cartModalClose.addEventListener("click", () => el.cartModalBackdrop.classList.remove("open"));
@@ -589,6 +598,22 @@
 
   el.paymentResultClose.addEventListener("click", () => el.paymentResultModalBackdrop.classList.remove("open"));
 
+  // ---------------- Mini header (aparece al bajar, el hero grande no queda fijo) ----------------
+  function setupMiniHeaderScroll() {
+    if (!el.heroBanner) return;
+    let visible = false;
+    const toggle = () => {
+      const shouldShow = window.scrollY > el.heroBanner.offsetHeight - 60;
+      if (shouldShow !== visible) {
+        visible = shouldShow;
+        el.miniHeader.classList.toggle("visible", visible);
+      }
+    };
+    window.addEventListener("scroll", toggle, { passive: true });
+    toggle();
+  }
+
   loadCatalog();
   handlePaymentReturn();
+  setupMiniHeaderScroll();
 })();
