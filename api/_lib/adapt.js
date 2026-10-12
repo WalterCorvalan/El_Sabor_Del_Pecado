@@ -9,6 +9,7 @@ module.exports = function adapt(handler) {
     const event = {
       httpMethod: req.method,
       headers: req.headers,
+      queryStringParameters: req.query || {},
       body: body || null
     };
 
@@ -18,6 +19,10 @@ module.exports = function adapt(handler) {
     for (const [key, value] of Object.entries(result.headers || {})) {
       res.setHeader(key, value);
     }
-    res.end(result.body ?? "");
+    if (result.isBase64Encoded) {
+      res.end(Buffer.from(result.body || "", "base64"));
+    } else {
+      res.end(result.body ?? "");
+    }
   };
 };

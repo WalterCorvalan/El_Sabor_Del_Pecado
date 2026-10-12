@@ -146,8 +146,20 @@
           <textarea rows="2" class="prod-desc">${escapeHtml(product.description || "")}</textarea>
         </div>
         <div class="field">
-          <label>URL de la foto</label>
-          <input type="text" class="prod-image" value="${escapeAttr(product.image || "")}" />
+          <label>Foto</label>
+          <div class="image-field">
+            <img class="prod-image-preview${product.image ? "" : " hidden"}" src="${escapeAttr(product.image || "")}" alt="" />
+            <div style="flex:1;min-width:0;">
+              <input type="text" class="prod-image" placeholder="URL de la foto, o subí un archivo" value="${escapeAttr(product.image || "")}" />
+              <div class="image-upload-row">
+                <label class="btn-outline btn-small image-upload-label">
+                  📷 Subir foto
+                  <input type="file" class="prod-image-file" accept="image/jpeg,image/png,image/webp" hidden />
+                </label>
+                <span class="image-upload-status"></span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="variant-admin">
@@ -187,6 +199,19 @@
         </div>
       </div>
     `;
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result;
+        const base64 = typeof result === "string" ? result.split(",")[1] || "" : "";
+        resolve(base64);
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
   }
 
   function escapeHtml(str) {
@@ -242,10 +267,74 @@
 
       card.querySelector(".prod-name").addEventListener("input", (e) => (product.name = e.target.value));
       card.querySelector(".prod-desc").addEventListener("input", (e) => (product.description = e.target.value));
-      card.querySelector(".prod-image").addEventListener("input", (e) => (product.image = e.target.value));
       card.querySelector(".prod-price").addEventListener("input", (e) => {
         const val = parseFloat(e.target.value.replace(",", "."));
         product.price = Number.isFinite(val) ? val : 0;
+      });
+
+      const imagePreview = card.querySelector(".prod-image-preview");
+      card.querySelector(".prod-image").addEventListener("input", (e) => {
+        product.image = e.target.value;
+        imagePreview.src = product.image;
+        imagePreview.classList.toggle("hidden", !product.image);
+      });
+
+      const imageStatus = card.querySelector(".image-upload-status");
+      card.querySelector(".prod-image-file").addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        e.target.value = "";
+        if (!file) return;
+
+        const allowed = ["image/jpeg", "image/png", "image/webp"];
+        if (!allowed.includes(file.type)) {
+          imageStatus.textContent = "Formato no soportado (usá JPG, PNG o WEBP)";
+          imageStatus.className = "image-upload-status error";
+          return;
+        }
+        if (file.size > 2.5 * 1024 * 1024) {
+          imageStatus.textContent = "La imagen no puede pesar más de 2.5MB";
+          imageStatus.className = "image-upload-status error";
+          return;
+        }
+
+        imageStatus.textContent = "Subiendo...";
+        imageStatus.className = "image-upload-status";
+
+        try {
+          const dataBase64 = await fileToBase64(file);
+          const res = await fetch("/api/upload-image", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ contentType: file.type, dataBase64 })
+          });
+          const data = await res.json();
+
+          if (res.status === 401) {
+            imageStatus.textContent = "Tu sesión expiró, volvé a ingresar la contraseña";
+            imageStatus.className = "image-upload-status error";
+            logout();
+            return;
+          }
+          if (!res.ok) {
+            imageStatus.textContent = data.error || "No se pudo subir la imagen";
+            imageStatus.className = "image-upload-status error";
+            return;
+          }
+
+          product.image = data.url;
+          card.querySelector(".prod-image").value = data.url;
+          imagePreview.src = data.url;
+          imagePreview.classList.remove("hidden");
+          imageStatus.textContent = "Foto subida ✅";
+          imageStatus.className = "image-upload-status ok";
+        } catch (err) {
+          console.error(err);
+          imageStatus.textContent = "Error de conexión al subir la imagen";
+          imageStatus.className = "image-upload-status error";
+        }
       });
 
       card.querySelector("[data-remove-product]").addEventListener("click", () => {

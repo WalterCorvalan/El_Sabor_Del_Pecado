@@ -53,6 +53,22 @@
     .admin-msg.error { color: var(--rojo-oscuro); font-weight: 700; }
     .admin-msg.ok { color: #2e7d32; font-weight: 700; }
 
+    .image-field { display: flex; gap: 10px; align-items: flex-start; }
+    .prod-image-preview {
+      width: 64px;
+      height: 64px;
+      flex: none;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 1px solid var(--card-borde);
+      background: var(--bg);
+    }
+    .image-upload-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+    .image-upload-label { cursor: pointer; display: inline-block; }
+    .image-upload-status { font-size: 12px; color: var(--text-muted); }
+    .image-upload-status.error { color: var(--rojo-oscuro); font-weight: 700; }
+    .image-upload-status.ok { color: #2e7d32; font-weight: 700; }
+
     .admin-wrap label,
     .login-screen label {
       font-size: 12px;
