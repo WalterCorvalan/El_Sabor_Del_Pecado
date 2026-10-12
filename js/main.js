@@ -364,6 +364,17 @@
     renderCartModal();
   }
 
+  function updateCartQty(lineId, delta) {
+    const item = state.cart.find((i) => i.lineId === lineId);
+    if (!item) return;
+    item.qty += delta;
+    if (item.qty <= 0) {
+      state.cart = state.cart.filter((i) => i.lineId !== lineId);
+    }
+    renderCartBadge();
+    renderCartModal();
+  }
+
   function cartTotal() {
     return state.cart.reduce((sum, item) => sum + item.price * item.qty, 0);
   }
@@ -393,14 +404,19 @@
             .join(" · ");
           return `
             <div class="cart-item">
+              <button class="cart-item-remove" data-remove="${item.lineId}" aria-label="Quitar ${escapeHtml(item.name)}">×</button>
               <div class="cart-item-top">
-                <strong>${item.qty}x ${escapeHtml(item.name)}</strong>
-                <span>${money(item.price * item.qty)}</span>
+                <strong>${escapeHtml(item.name)}</strong>
+                <span class="cart-item-price">${money(item.price * item.qty)}</span>
               </div>
               ${selectionsText ? `<div class="cart-item-selections">${escapeHtml(selectionsText)}</div>` : ""}
               <div class="cart-item-bottom">
-                <span style="color:#9e9e9e;font-size:12px;">${money(item.price)} c/u</span>
-                <button class="cart-item-remove" data-remove="${item.lineId}">Quitar</button>
+                <div class="qty-stepper" data-cart-qty="${item.lineId}">
+                  <button type="button" class="qty-minus" aria-label="Restar">−</button>
+                  <span>${item.qty}</span>
+                  <button type="button" class="qty-plus" aria-label="Sumar">+</button>
+                </div>
+                <span class="cart-item-unit">${money(item.price)} c/u</span>
               </div>
             </div>
           `;
@@ -409,6 +425,11 @@
 
       el.cartItems.querySelectorAll("[data-remove]").forEach((btn) => {
         btn.addEventListener("click", () => removeFromCart(btn.dataset.remove));
+      });
+      el.cartItems.querySelectorAll("[data-cart-qty]").forEach((stepper) => {
+        const lineId = stepper.dataset.cartQty;
+        stepper.querySelector(".qty-minus").addEventListener("click", () => updateCartQty(lineId, -1));
+        stepper.querySelector(".qty-plus").addEventListener("click", () => updateCartQty(lineId, 1));
       });
     }
     el.cartTotal.textContent = money(cartTotal());
