@@ -46,8 +46,19 @@
     checkoutTotal: document.getElementById("checkoutTotal"),
     checkoutModalClose: document.getElementById("checkoutModalClose"),
     deliveryAddress: document.getElementById("deliveryAddress"),
+    deliveryAddressField: document.getElementById("deliveryAddressField"),
+    customerName: document.getElementById("customerName"),
     customerPhone: document.getElementById("customerPhone"),
-    sendWhatsapp: document.getElementById("sendWhatsapp"),
+    customerEmail: document.getElementById("customerEmail"),
+    goToResumen: document.getElementById("goToResumen"),
+
+    resumenModalBackdrop: document.getElementById("resumenModalBackdrop"),
+    resumenModalClose: document.getElementById("resumenModalClose"),
+    resumenItems: document.getElementById("resumenItems"),
+    resumenContact: document.getElementById("resumenContact"),
+    resumenShipping: document.getElementById("resumenShipping"),
+    resumenTotal: document.getElementById("resumenTotal"),
+    confirmResumen: document.getElementById("confirmResumen"),
 
     paymentResultModalBackdrop: document.getElementById("paymentResultModalBackdrop"),
     paymentResultTitle: document.getElementById("paymentResultTitle"),
@@ -58,12 +69,14 @@
 
     toast: document.getElementById("toast"),
 
-    stickyCartBar: document.getElementById("stickyCartBar"),
-    stickyCartCount: document.getElementById("stickyCartCount"),
-    stickyCartTotal: document.getElementById("stickyCartTotal"),
-    stickyCartItemsLabel: document.getElementById("stickyCartItemsLabel"),
-    stickyCartIcon: document.getElementById("stickyCartIcon"),
-    stickyCartOpen: document.getElementById("stickyCartOpen"),
+    splashScreen: document.getElementById("splashScreen"),
+    heroCta: document.getElementById("heroCta"),
+
+    bottomTabInicio: document.getElementById("bottomTabInicio"),
+    bottomTabMenu: document.getElementById("bottomTabMenu"),
+    bottomTabCart: document.getElementById("bottomTabCart"),
+    bottomTabLocal: document.getElementById("bottomTabLocal"),
+    bottomCartCount: document.getElementById("bottomCartCount"),
 
     miniHeader: document.getElementById("miniHeader"),
     miniMenuToggle: document.getElementById("miniMenuToggle"),
@@ -73,6 +86,7 @@
   };
 
   let selectedPayment = "Efectivo";
+  let selectedShipping = "Retiro en local";
   let currentProductContext = null; // { category, product, qty }
 
   function money(n) {
@@ -119,6 +133,7 @@
     el.productModalBackdrop.classList.remove("open");
     el.cartModalBackdrop.classList.remove("open");
     el.checkoutModalBackdrop.classList.remove("open");
+    el.resumenModalBackdrop.classList.remove("open");
     el.paymentResultModalBackdrop.classList.remove("open");
   }
 
@@ -135,7 +150,15 @@
     } catch (err) {
       console.error(err);
       el.loadingState.textContent = "No pudimos cargar el menú. Probá recargar la página.";
+    } finally {
+      hideSplashScreen();
     }
+  }
+
+  function hideSplashScreen() {
+    if (!el.splashScreen) return;
+    el.splashScreen.classList.add("splash-hide");
+    setTimeout(() => el.splashScreen.remove(), 500);
   }
 
   function renderCategoryTabs() {
@@ -285,8 +308,30 @@
       })
       .join("");
 
+    const extras = product.extras || [];
+    const extrasHtml = extras.length
+      ? `
+        <div class="variant-group">
+          <h4>Extras <small>(opcional)</small></h4>
+          ${extras
+            .map(
+              (extra, idx) => `
+                <label class="variant-option" for="extra-${idx}">
+                  <input type="checkbox" id="extra-${idx}" data-extra-id="${escapeHtml(extra.id)}"
+                    data-extra-name="${escapeHtml(extra.name)}" data-extra-price="${Number(extra.price) || 0}" />
+                  <span>${escapeHtml(extra.name)}</span>
+                  <span style="margin-left:auto;color:var(--dorado);font-weight:700;">+${money(extra.price)}</span>
+                </label>
+              `
+            )
+            .join("")}
+        </div>
+      `
+      : "";
+
     el.productModalBody.innerHTML = `
       ${variantsHtml}
+      ${extrasHtml}
       <div class="variant-group">
         <h4>Cantidad</h4>
         <div class="qty-control">
@@ -294,6 +339,10 @@
           <span id="modalQtyValue">${currentProductContext.qty}</span>
           <button type="button" id="modalQtyPlus">+</button>
         </div>
+      </div>
+      <div class="variant-group">
+        <h4>Observaciones <small>(opcional)</small></h4>
+        <textarea id="modalNotes" rows="2" placeholder="Ej: sin tomate, bien cocido, etc." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:var(--negro);color:var(--blanco);font-size:14px;font-family:inherit;"></textarea>
       </div>
     `;
 
@@ -330,16 +379,27 @@
       }
     }
 
-    addToCart(category, product, qty, selections);
+    const extraInputs = el.productModalBody.querySelectorAll("[data-extra-id]:checked");
+    const extras = Array.from(extraInputs).map((input) => ({
+      id: input.dataset.extraId,
+      name: input.dataset.extraName,
+      price: Number(input.dataset.extraPrice) || 0
+    }));
+
+    const notes = document.getElementById("modalNotes")?.value.trim() || "";
+
+    addToCart(category, product, qty, selections, extras, notes);
     el.productModalBackdrop.classList.remove("open");
     showToast(`${product.name} agregado al carrito`);
   });
 
   // ---------------- Carrito ----------------
-  function addToCart(category, product, qty, selections) {
-    const selectionsKey = JSON.stringify(selections);
+  function addToCart(category, product, qty, selections, extras = [], notes = "") {
+    const extrasTotal = extras.reduce((sum, e) => sum + e.price, 0);
+    const unitPrice = product.price + extrasTotal;
+    const matchKey = JSON.stringify({ selections, extras, notes });
     const existing = state.cart.find(
-      (item) => item.productId === product.id && JSON.stringify(item.selections) === selectionsKey
+      (item) => item.productId === product.id && JSON.stringify({ selections: item.selections, extras: item.extras, notes: item.notes }) === matchKey
     );
 
     if (existing) {
@@ -350,9 +410,11 @@
         productId: product.id,
         categoryId: category.id,
         name: product.name,
-        price: product.price,
+        price: unitPrice,
         qty,
-        selections
+        selections,
+        extras,
+        notes
       });
     }
     renderCartBadge();
@@ -387,10 +449,19 @@
     const count = cartItemCount();
     el.cartCount.textContent = count;
     el.miniCartCount.textContent = count;
-    el.stickyCartCount.textContent = count;
-    el.stickyCartTotal.textContent = money(cartTotal());
-    el.stickyCartItemsLabel.textContent = `${count} item${count === 1 ? "" : "s"}`;
-    el.stickyCartBar.classList.toggle("hidden", count === 0);
+    el.bottomCartCount.textContent = count;
+    el.bottomCartCount.classList.toggle("hidden", count === 0);
+  }
+
+  function lineDetailsText(item) {
+    const parts = (item.selections || []).map((s) => `${s.groupName}: ${s.values.join(", ")}`);
+    if (item.extras && item.extras.length) {
+      parts.push(`Extras: ${item.extras.map((e) => e.name).join(", ")}`);
+    }
+    if (item.notes) {
+      parts.push(`Obs: ${item.notes}`);
+    }
+    return parts.join(" · ");
   }
 
   function renderCartModal() {
@@ -399,9 +470,7 @@
     } else {
       el.cartItems.innerHTML = state.cart
         .map((item) => {
-          const selectionsText = item.selections
-            .map((s) => `${s.groupName}: ${s.values.join(", ")}`)
-            .join(" · ");
+          const selectionsText = lineDetailsText(item);
           return `
             <div class="cart-item">
               <button class="cart-item-remove" data-remove="${item.lineId}" aria-label="Quitar ${escapeHtml(item.name)}">×</button>
@@ -441,8 +510,6 @@
   }
   el.cartButton.addEventListener("click", openCartModal);
   el.miniCartButton.addEventListener("click", openCartModal);
-  el.stickyCartOpen.addEventListener("click", openCartModal);
-  el.stickyCartIcon.addEventListener("click", openCartModal);
   el.cartModalClose.addEventListener("click", () => el.cartModalBackdrop.classList.remove("open"));
 
   // ---------------- Checkout ----------------
@@ -460,7 +527,7 @@
   function renderCheckoutSummary() {
     el.checkoutSummary.innerHTML = state.cart
       .map((item) => {
-        const selectionsText = item.selections.map((s) => `${s.groupName}: ${s.values.join(", ")}`).join(" · ");
+        const selectionsText = lineDetailsText(item);
         return `<div>${item.qty}x ${escapeHtml(item.name)}${selectionsText ? " (" + escapeHtml(selectionsText) + ")" : ""} — ${money(item.price * item.qty)}</div>`;
       })
       .join("");
@@ -475,22 +542,33 @@
     });
   });
 
-  function buildOrderMessage(cart, total, address, customerPhone, payment, extraNote) {
+  document.querySelectorAll(".shipping-option").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".shipping-option").forEach((b) => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      selectedShipping = btn.dataset.shipping;
+      el.deliveryAddressField.classList.toggle("hidden", selectedShipping !== "Envío a domicilio");
+    });
+  });
+
+  function buildOrderMessage(cart, total, contact, payment, extraNote) {
+    const { name, phone, email, shipping, address } = contact;
     const lines = [];
     lines.push("¡Hola! Quiero hacer un pedido 🔥");
     lines.push("");
     lines.push("*Pedido:*");
     cart.forEach((item) => {
-      const selectionsText = (item.selections || [])
-        .map((s) => `${s.groupName}: ${s.values.join(", ")}`)
-        .join(" · ");
+      const selectionsText = lineDetailsText(item);
       lines.push(`- ${item.qty}x ${item.name}${selectionsText ? ` (${selectionsText})` : ""} — ${money(item.price * item.qty)}`);
     });
     lines.push("");
     lines.push(`*Total: ${money(total)}*`);
     lines.push("");
-    lines.push(`*Dirección:* ${address}`);
-    lines.push(`*Teléfono:* ${customerPhone}`);
+    lines.push(`*Nombre:* ${name}`);
+    lines.push(`*Teléfono:* ${phone}`);
+    if (email) lines.push(`*Email:* ${email}`);
+    lines.push(`*Entrega:* ${shipping}`);
+    if (shipping === "Envío a domicilio") lines.push(`*Dirección:* ${address}`);
     lines.push(`*Medio de pago:* ${payment}`);
     if (extraNote) {
       lines.push("");
@@ -506,13 +584,16 @@
     window.open(url, "_blank", "noopener");
   }
 
-  el.sendWhatsapp.addEventListener("click", async () => {
-    const address = el.deliveryAddress.value.trim();
+  // ---------------- Checkout → Resumen del pedido ----------------
+  el.goToResumen.addEventListener("click", () => {
+    const name = el.customerName.value.trim();
     const phone = el.customerPhone.value.trim();
+    const email = el.customerEmail.value.trim();
+    const address = el.deliveryAddress.value.trim();
 
-    if (!address) {
-      showToast("Ingresá una dirección de entrega");
-      el.deliveryAddress.focus();
+    if (!name) {
+      showToast("Ingresá tu nombre y apellido");
+      el.customerName.focus();
       return;
     }
     if (!phone) {
@@ -520,14 +601,59 @@
       el.customerPhone.focus();
       return;
     }
+    if (selectedShipping === "Envío a domicilio" && !address) {
+      showToast("Ingresá una dirección de entrega");
+      el.deliveryAddress.focus();
+      return;
+    }
     if (!state.cart.length) {
       showToast("Tu carrito está vacío");
       return;
     }
 
+    el.checkoutModalBackdrop.classList.remove("open");
+
+    el.resumenItems.innerHTML = state.cart
+      .map((item) => {
+        const selectionsText = lineDetailsText(item);
+        return `<div>${item.qty}x ${escapeHtml(item.name)}${selectionsText ? " (" + escapeHtml(selectionsText) + ")" : ""} — ${money(item.price * item.qty)}</div>`;
+      })
+      .join("");
+
+    el.resumenContact.innerHTML = `
+      <div>${escapeHtml(name)}</div>
+      <div>${escapeHtml(phone)}</div>
+      ${email ? `<div>${escapeHtml(email)}</div>` : ""}
+    `;
+
+    el.resumenShipping.innerHTML = `
+      <div>${escapeHtml(selectedShipping)}</div>
+      ${selectedShipping === "Envío a domicilio" ? `<div>${escapeHtml(address)}</div>` : ""}
+    `;
+
+    el.resumenTotal.textContent = money(cartTotal());
+    el.resumenModalBackdrop.classList.add("open");
+  });
+  el.checkoutModalClose.addEventListener("click", () => el.checkoutModalBackdrop.classList.remove("open"));
+  el.resumenModalClose.addEventListener("click", () => el.resumenModalBackdrop.classList.remove("open"));
+
+  document.querySelectorAll("[data-edit-step]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      el.resumenModalBackdrop.classList.remove("open");
+      el.checkoutModalBackdrop.classList.add("open");
+    });
+  });
+
+  el.confirmResumen.addEventListener("click", async () => {
+    const name = el.customerName.value.trim();
+    const phone = el.customerPhone.value.trim();
+    const email = el.customerEmail.value.trim();
+    const address = selectedShipping === "Envío a domicilio" ? el.deliveryAddress.value.trim() : "Retiro en el local";
+    const contact = { name, phone, email, shipping: selectedShipping, address };
+
     if (selectedPayment === "Mercado Pago") {
-      el.sendWhatsapp.disabled = true;
-      el.sendWhatsapp.textContent = "Iniciando pago...";
+      el.confirmResumen.disabled = true;
+      el.confirmResumen.textContent = "Iniciando pago...";
       try {
         const res = await fetch("/api/create-payment", {
           method: "POST",
@@ -536,7 +662,8 @@
             items: state.cart.map((item) => ({
               productId: item.productId,
               qty: item.qty,
-              selections: item.selections
+              selections: item.selections,
+              extraIds: (item.extras || []).map((e) => e.id)
             })),
             address,
             phone
@@ -546,27 +673,28 @@
 
         if (!res.ok || !data.checkoutUrl) {
           showToast(data.error || "No se pudo iniciar el pago");
-          el.sendWhatsapp.disabled = false;
-          el.sendWhatsapp.textContent = "Enviar pedido por WhatsApp";
+          el.confirmResumen.disabled = false;
+          el.confirmResumen.textContent = "Confirmar pedido";
           return;
         }
 
         sessionStorage.setItem(
           PENDING_ORDER_KEY,
-          JSON.stringify({ cart: state.cart, total: cartTotal(), address, phone })
+          JSON.stringify({ cart: state.cart, total: cartTotal(), contact })
         );
         window.location.href = data.checkoutUrl;
       } catch (err) {
         console.error(err);
         showToast("Error de conexión al iniciar el pago");
-        el.sendWhatsapp.disabled = false;
-        el.sendWhatsapp.textContent = "Enviar pedido por WhatsApp";
+        el.confirmResumen.disabled = false;
+        el.confirmResumen.textContent = "Confirmar pedido";
       }
       return;
     }
 
-    const message = buildOrderMessage(state.cart, cartTotal(), address, phone, selectedPayment);
+    const message = buildOrderMessage(state.cart, cartTotal(), contact, selectedPayment);
     openWhatsappWithMessage(message);
+    el.resumenModalBackdrop.classList.remove("open");
   });
 
   // ---------------- Vuelta de Mercado Pago ----------------
@@ -584,8 +712,8 @@
         "Tu pago se acreditó correctamente. Tocá el botón para avisarle al local y que empiecen a prepararlo.";
       el.paymentResultSummary.innerHTML = pending.cart
         .map((item) => {
-          const selectionsText = (item.selections || []).map((s) => `${s.groupName}: ${s.values.join(", ")}`).join(" · ");
-          return `<div>${item.qty}x ${escapeHtml(item.name)}${selectionsText ? " (" + escapeHtml(selectionsText) + ")" : ""} — ${money(item.price * item.qty)}</div>`;
+          const detailsText = lineDetailsText(item);
+          return `<div>${item.qty}x ${escapeHtml(item.name)}${detailsText ? " (" + escapeHtml(detailsText) + ")" : ""} — ${money(item.price * item.qty)}</div>`;
         })
         .join("") + `<div style="margin-top:8px;font-weight:800;">Total: ${money(pending.total)}</div>`;
 
@@ -593,8 +721,7 @@
         const message = buildOrderMessage(
           pending.cart,
           pending.total,
-          pending.address,
-          pending.phone,
+          pending.contact,
           "Mercado Pago",
           "✅ *Pago ya realizado con Mercado Pago*"
         );
@@ -632,6 +759,45 @@
     };
     window.addEventListener("scroll", toggle, { passive: true });
     toggle();
+  }
+
+  // ---------------- Hero CTA / bottom tabs ----------------
+  if (el.heroCta) {
+    el.heroCta.addEventListener("click", () => {
+      el.categoryTabs.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function setActiveBottomTab(tab) {
+    [el.bottomTabInicio, el.bottomTabMenu, el.bottomTabCart, el.bottomTabLocal].forEach((btn) => {
+      if (btn) btn.classList.toggle("active", btn === tab);
+    });
+  }
+
+  if (el.bottomTabInicio) {
+    el.bottomTabInicio.addEventListener("click", () => {
+      setActiveBottomTab(el.bottomTabInicio);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+  if (el.bottomTabMenu) {
+    el.bottomTabMenu.addEventListener("click", () => {
+      setActiveBottomTab(el.bottomTabMenu);
+      el.catalog.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+  if (el.bottomTabCart) {
+    el.bottomTabCart.addEventListener("click", () => {
+      setActiveBottomTab(el.bottomTabCart);
+      openCartModal();
+    });
+  }
+  if (el.bottomTabLocal) {
+    el.bottomTabLocal.addEventListener("click", () => {
+      setActiveBottomTab(el.bottomTabLocal);
+      const phone = (state.catalog?.whatsappNumber || "").replace(/\D/g, "");
+      if (phone) window.open(`https://wa.me/${phone}`, "_blank");
+    });
   }
 
   loadCatalog();

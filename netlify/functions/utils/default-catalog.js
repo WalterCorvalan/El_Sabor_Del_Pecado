@@ -41,8 +41,17 @@ function coccionVariant() {
   };
 }
 
-function product(id, name, description, image, variants = [], price = 0) {
-  return { id, name, description, price, image, variants };
+function product(id, name, description, image, variants = [], price = 0, extras = []) {
+  return { id, name, description, price, image, variants, extras };
+}
+
+function sandwichExtras() {
+  return [
+    { id: "extra-panceta", name: "Panceta extra", price: 800 },
+    { id: "extra-doble-queso", name: "Doble queso", price: 600 },
+    { id: "extra-huevo", name: "Huevo", price: 500 },
+    { id: "extra-salsa-especial", name: "Salsa especial", price: 300 }
+  ];
 }
 
 function defaultCatalog() {
@@ -59,7 +68,8 @@ function defaultCatalog() {
             "Vacío de ternera horneado a lenta cocción en reducción de vino tinto desmechado con hortalizas de estación y hierbas aromáticas, y lluvia de queso provolone.",
             IMG_SANDWICH,
             [],
-            7000
+            7000,
+            sandwichExtras()
           ),
           product(
             "sandwich-pollo-funghi",

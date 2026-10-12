@@ -81,10 +81,27 @@ exports.handler = async (event) => {
           .join(" · ")
       : "";
 
+    const extrasIndex = new Map((product.extras || []).map((e) => [e.id, e]));
+    const extraIds = Array.isArray(line.extraIds) ? line.extraIds : [];
+    let extrasTotal = 0;
+    const extraNames = [];
+    for (const extraId of extraIds) {
+      const extra = extrasIndex.get(extraId);
+      if (!extra) {
+        return { statusCode: 400, body: JSON.stringify({ error: `Extra no encontrado para ${product.name}` }) };
+      }
+      extrasTotal += Number(extra.price);
+      extraNames.push(extra.name);
+    }
+
+    const detailsText = [selectionsText, extraNames.length ? `Extras: ${extraNames.join(", ")}` : ""]
+      .filter(Boolean)
+      .join(" · ");
+
     mpItems.push({
-      title: selectionsText ? `${product.name} (${selectionsText})` : product.name,
+      title: detailsText ? `${product.name} (${detailsText})` : product.name,
       quantity: qty,
-      unit_price: Number(product.price),
+      unit_price: Number(product.price) + extrasTotal,
       currency_id: "ARS"
     });
   }

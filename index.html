@@ -12,6 +12,12 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
+  <div class="splash-screen" id="splashScreen">
+    <span class="brand-logo splash-logo" role="img" aria-label="El Sabor del Pecado"></span>
+    <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+    <span class="splash-caption">Cargando...</span>
+  </div>
+
   <div class="overlay" id="overlay"></div>
 
   <nav class="side-nav" id="sideNav">
@@ -50,6 +56,7 @@
         </div>
         <p class="hero-tags">Sándwiches<br>Al&nbsp;Plato&nbsp;·&nbsp;Empanadas&nbsp;·&nbsp;Bebidas</p>
         <div class="hero-ribbon">No inventamos nada,<br>solo somos distintos</div>
+        <button class="btn-gold hero-cta" id="heroCta">Ver menú →</button>
       </div>
       <img class="hero-image" src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=900&q=80" alt="Sándwich gourmet de autor" />
     </div>
@@ -66,17 +73,27 @@
     🔥 El Sabor del Pecado — Pedidos por WhatsApp
   </footer>
 
-  <div class="sticky-cart-bar hidden" id="stickyCartBar">
-    <button class="sticky-cart-icon" id="stickyCartIcon" aria-label="Ver carrito">
-      🛒
-      <span class="cart-count" id="stickyCartCount">0</span>
+  <nav class="bottom-tabs" id="bottomTabs">
+    <button class="bottom-tab active" id="bottomTabInicio" aria-label="Inicio">
+      <span class="bottom-tab-icon">🏠</span>
+      <span class="bottom-tab-label">Inicio</span>
     </button>
-    <div class="sticky-cart-info">
-      <strong id="stickyCartTotal">$0</strong>
-      <small id="stickyCartItemsLabel">0 items</small>
-    </div>
-    <button class="btn-gold" id="stickyCartOpen">Ver carrito →</button>
-  </div>
+    <button class="bottom-tab" id="bottomTabMenu" aria-label="Menú">
+      <span class="bottom-tab-icon">📋</span>
+      <span class="bottom-tab-label">Menú</span>
+    </button>
+    <button class="bottom-tab" id="bottomTabCart" aria-label="Tu pedido">
+      <span class="bottom-tab-icon">
+        🛒
+        <span class="cart-count hidden" id="bottomCartCount">0</span>
+      </span>
+      <span class="bottom-tab-label">Pedido</span>
+    </button>
+    <button class="bottom-tab" id="bottomTabLocal" aria-label="Contactar al local">
+      <span class="bottom-tab-icon">📍</span>
+      <span class="bottom-tab-label">Mi local</span>
+    </button>
+  </nav>
 
   <!-- Modal variantes de producto -->
   <div class="modal-backdrop" id="productModalBackdrop">
@@ -117,13 +134,43 @@
       <div class="checkout-summary" id="checkoutSummary"></div>
 
       <div class="field">
-        <label for="deliveryAddress">Dirección de entrega</label>
-        <textarea id="deliveryAddress" rows="2" placeholder="Calle, número, piso/depto, referencias..."></textarea>
+        <label for="customerName">Nombre y apellido</label>
+        <input type="text" id="customerName" placeholder="Ej: Juan Pérez" />
       </div>
 
       <div class="field">
-        <label for="customerPhone">Tu teléfono de contacto</label>
+        <label for="customerPhone">Teléfono de contacto</label>
         <input type="tel" id="customerPhone" placeholder="Ej: 11 2233 4455" />
+      </div>
+
+      <div class="field">
+        <label for="customerEmail">Email (opcional)</label>
+        <input type="text" id="customerEmail" placeholder="Ej: juan@email.com" />
+      </div>
+
+      <div class="field">
+        <label>Método de entrega</label>
+        <div class="shipping-options">
+          <button type="button" class="shipping-option selected" data-shipping="Retiro en local">
+            <span class="shipping-option-icon">🏪</span>
+            <span>
+              <strong>Retiro en local</strong>
+              <small>Listo en 20-30 min</small>
+            </span>
+          </button>
+          <button type="button" class="shipping-option" data-shipping="Envío a domicilio">
+            <span class="shipping-option-icon">🛵</span>
+            <span>
+              <strong>Envío a domicilio</strong>
+              <small>Consultar zona y costo</small>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="field hidden" id="deliveryAddressField">
+        <label for="deliveryAddress">Dirección de entrega</label>
+        <textarea id="deliveryAddress" rows="2" placeholder="Calle, número, piso/depto, referencias..."></textarea>
       </div>
 
       <div class="field">
@@ -140,7 +187,45 @@
         <span id="checkoutTotal">$0</span>
       </div>
 
-      <button class="btn-gold" id="sendWhatsapp" style="width:100%;">Enviar pedido por WhatsApp</button>
+      <button class="btn-gold" id="goToResumen" style="width:100%;">Continuar →</button>
+    </div>
+  </div>
+
+  <!-- Modal resumen del pedido (paso previo a confirmar) -->
+  <div class="modal-backdrop" id="resumenModalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Resumen del pedido</h3>
+        <button class="modal-close" id="resumenModalClose">&times;</button>
+      </div>
+
+      <div class="resumen-block">
+        <div class="resumen-block-title">Detalle de la compra</div>
+        <div class="checkout-summary" id="resumenItems"></div>
+      </div>
+
+      <div class="resumen-block">
+        <div class="resumen-block-header">
+          <span class="resumen-block-title">Datos de contacto</span>
+          <button type="button" class="resumen-edit" data-edit-step="contacto">Cambiar</button>
+        </div>
+        <div class="resumen-contact" id="resumenContact"></div>
+      </div>
+
+      <div class="resumen-block">
+        <div class="resumen-block-header">
+          <span class="resumen-block-title">Método de entrega</span>
+          <button type="button" class="resumen-edit" data-edit-step="envio">Cambiar</button>
+        </div>
+        <div class="resumen-contact" id="resumenShipping"></div>
+      </div>
+
+      <div class="cart-total-row">
+        <span>Total</span>
+        <span id="resumenTotal">$0</span>
+      </div>
+
+      <button class="btn-gold" id="confirmResumen" style="width:100%;">Confirmar pedido</button>
     </div>
   </div>
 
