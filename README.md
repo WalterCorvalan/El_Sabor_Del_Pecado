@@ -59,6 +59,16 @@ proyecto en la plataforma nueva de Netlify — ver `utils/blob-store.js`).
    de WhatsApp real y el catálogo definitivo (al desplegar, el sitio arranca con un catálogo de
    ejemplo para poder probar el flujo completo).
 
+## Deploy en Vercel
+
+El mismo código corre en Vercel: las carpetas `api/` envuelven los handlers de `netlify/functions`
+y el catálogo se guarda en Vercel Blob (ver `netlify/functions/utils/blob-store.js`).
+
+1. Importar el repositorio en Vercel (Framework Preset: *Other*, sin build command).
+2. En *Storage*, crear un store de **Blob** y conectarlo al proyecto (agrega `BLOB_READ_WRITE_TOKEN`).
+3. En *Settings → Environment Variables* agregar `ADMIN_PASSWORD` y `MERCADOPAGO_ACCESS_TOKEN`.
+4. Deploy. Entrar a `/admin.html` para cargar el catálogo (si está vacío arranca con el menú por defecto).
+
 ## Desarrollo local
 
 ```bash
