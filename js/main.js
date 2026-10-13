@@ -4,23 +4,38 @@
   const state = {
     catalog: null,
     cart: [], // { lineId, productId, categoryId, name, price, qty, selections: [{groupName, values:[]}] }
-    expandedCategories: new Set()
+    expandedCategories: new Set(),
+    seenProducts: new Set()
   };
 
   const PRODUCTS_PREVIEW_COUNT = 2;
 
+  const svg = (inner) =>
+    `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+
+  const CATEGORY_ICONS = {
+    sandwich: svg('<path d="M4.5 10.5a7.5 5.5 0 0 1 15 0z"/><path d="M3.5 13.5q1.9 2 3.8 0t3.8 0 3.8 0 3.9 0"/><path d="M4.5 16.2h15v.8a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3z"/>'),
+    plato: svg('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.9"/>'),
+    empanada: svg('<path d="M3 16.5a9 9 0 0 1 18 0z"/><path d="M5.6 16.5v1.7M8.7 16.5v2M12 16.5v2.2M15.3 16.5v2M18.4 16.5v1.7"/><path d="M8.5 11.5c1.2-1.2 2.7-1.8 4-1.8"/>'),
+    dip: svg('<path d="M6.5 9h11l-.9 9.8a2 2 0 0 1-2 1.7H9.4a2 2 0 0 1-2-1.7z"/><path d="M8.5 9V6.5h7V9"/><path d="M9.8 13.5h4.4"/>'),
+    bebida: svg('<path d="M7 4h10l-1.2 16H8.2z"/><path d="M7.6 10.2h8.8"/><path d="M13 4l1.7-2.2"/>'),
+    otro: svg('<path d="M7.5 3v7.5M5.2 3v5a2.3 2.3 0 0 0 4.6 0V3M7.5 10.5V21"/><path d="M17 3c-2.2 1.8-2.7 4.8-2.7 8h2.7v10"/>')
+  };
+
   function categoryIcon(category) {
     const key = `${category.id} ${category.name}`.toLowerCase();
-    if (key.includes("empanada")) return "🥟";
-    if (key.includes("bebida") || key.includes("gaseosa") || key.includes("cerveza")) return "🥤";
-    if (key.includes("plato")) return "🍽️";
-    if (key.includes("sandw") || key.includes("burger") || key.includes("hamburg")) return "🍔";
-    return "🍴";
+    if (key.includes("empanada")) return CATEGORY_ICONS.empanada;
+    if (key.includes("dip") || key.includes("salsa")) return CATEGORY_ICONS.dip;
+    if (key.includes("bebida") || key.includes("gaseosa") || key.includes("cerveza")) return CATEGORY_ICONS.bebida;
+    if (key.includes("plato")) return CATEGORY_ICONS.plato;
+    if (key.includes("sandw") || key.includes("burger") || key.includes("hamburg")) return CATEGORY_ICONS.sandwich;
+    return CATEGORY_ICONS.otro;
   }
 
   const el = {
     catalog: document.getElementById("catalog"),
     categoryTabs: document.getElementById("categoryTabs"),
+    categoryTabsSlot: document.getElementById("categoryTabsSlot"),
     loadingState: document.getElementById("loadingState"),
     cartButton: document.getElementById("cartButton"),
     cartCount: document.getElementById("cartCount"),
@@ -77,6 +92,10 @@
     bottomTabCart: document.getElementById("bottomTabCart"),
     bottomTabLocal: document.getElementById("bottomTabLocal"),
     bottomCartCount: document.getElementById("bottomCartCount"),
+    bottomTabs: document.getElementById("bottomTabs"),
+    cartPill: document.getElementById("cartPill"),
+    cartPillCount: document.getElementById("cartPillCount"),
+    cartPillTotal: document.getElementById("cartPillTotal"),
 
     miniHeader: document.getElementById("miniHeader"),
     miniMenuToggle: document.getElementById("miniMenuToggle"),
@@ -155,11 +174,19 @@
     }
   }
 
+  let splashHidden = false;
   function hideSplashScreen() {
-    if (!el.splashScreen) return;
-    el.splashScreen.classList.add("splash-hide");
-    setTimeout(() => el.splashScreen.remove(), 500);
+    if (splashHidden) return;
+    splashHidden = true;
+    const wait = Math.max(0, 900 - performance.now());
+    setTimeout(() => {
+      document.body.classList.add("ready");
+      if (!el.splashScreen) return;
+      el.splashScreen.classList.add("splash-hide");
+      setTimeout(() => el.splashScreen.remove(), 600);
+    }, wait);
   }
+  setTimeout(hideSplashScreen, 6000);
 
   function renderCategoryTabs() {
     el.categoryTabs.innerHTML = state.catalog.categories
@@ -173,14 +200,22 @@
       )
       .join("");
 
+    measureTabsSlot();
+
     el.categoryTabs.querySelectorAll(".category-tab").forEach((btn) => {
       btn.addEventListener("click", () => {
-        el.categoryTabs.querySelectorAll(".category-tab").forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
+        haptic(6);
+        spyLockUntil = performance.now() + 900;
+        setActiveCategoryTab(btn);
         const target = document.getElementById(btn.dataset.target);
         if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     });
+  }
+
+  function measureTabsSlot() {
+    if (el.categoryTabs.classList.contains("stuck")) return;
+    el.categoryTabsSlot.style.height = `${el.categoryTabs.offsetHeight}px`;
   }
 
   function renderCatalog() {
@@ -235,6 +270,10 @@
       });
     });
 
+    setupReveal();
+    setupImageFades();
+    updateScrollState();
+
     el.catalog.querySelectorAll(".product-card").forEach((card) => {
       const valueEl = card.querySelector(".qty-value");
       card.querySelector(".qty-minus")?.addEventListener("click", () => {
@@ -249,7 +288,7 @@
   function productCardHtml(category, product) {
     const img = product.image || "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=900&q=80";
     return `
-      <article class="product-card">
+      <article class="product-card reveal" data-pid="${escapeHtml(product.id)}">
         <img class="product-thumb" src="${escapeHtml(img)}" alt="${escapeHtml(product.name)}" loading="lazy" />
         <div class="product-info">
           <h4>${escapeHtml(product.name)}</h4>
@@ -389,6 +428,8 @@
     const notes = document.getElementById("modalNotes")?.value.trim() || "";
 
     addToCart(category, product, qty, selections, extras, notes);
+    flyToCart(el.productModalConfirm);
+    haptic(12);
     el.productModalBackdrop.classList.remove("open");
     showToast(`${product.name} agregado al carrito`);
   });
@@ -445,12 +486,67 @@
     return state.cart.reduce((sum, item) => sum + item.qty, 0);
   }
 
+  let lastBadgeCount = 0;
   function renderCartBadge() {
     const count = cartItemCount();
     el.cartCount.textContent = count;
     el.miniCartCount.textContent = count;
+    el.cartCount.classList.toggle("is-zero", count === 0);
+    el.miniCartCount.classList.toggle("is-zero", count === 0);
     el.bottomCartCount.textContent = count;
     el.bottomCartCount.classList.toggle("hidden", count === 0);
+
+    el.cartPillCount.textContent = `${count} ${count === 1 ? "producto" : "productos"}`;
+    el.cartPillTotal.textContent = money(cartTotal());
+    el.cartPill.classList.toggle("show", count > 0);
+    el.cartPill.tabIndex = count > 0 ? 0 : -1;
+    document.body.classList.toggle("has-cart", count > 0);
+
+    if (count > lastBadgeCount) {
+      [el.cartCount, el.miniCartCount, el.bottomCartCount, el.cartPillTotal].forEach(popElement);
+    }
+    lastBadgeCount = count;
+  }
+
+  function popElement(node) {
+    if (!node || !node.animate) return;
+    node.animate(
+      [{ transform: "scale(1)" }, { transform: "scale(1.45)" }, { transform: "scale(0.92)" }, { transform: "scale(1)" }],
+      { duration: 420, easing: "cubic-bezier(0.34, 1.56, 0.64, 1)" }
+    );
+  }
+
+  function haptic(ms = 8) {
+    try {
+      if (navigator.vibrate) navigator.vibrate(ms);
+    } catch (_) {}
+  }
+
+  function flyToCart(fromEl) {
+    const target = el.cartPill.classList.contains("show") ? el.cartPill : el.bottomTabCart.querySelector(".bottom-tab-icon");
+    if (!fromEl || !target || !fromEl.animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const from = fromEl.getBoundingClientRect();
+    const to = target.getBoundingClientRect();
+    const dot = document.createElement("div");
+    dot.className = "fly-dot";
+    const startX = from.left + from.width / 2 - 14;
+    const startY = from.top + from.height / 2 - 14;
+    const endX = to.left + Math.min(to.width / 2, 40) - 14;
+    const endY = to.top + to.height / 2 - 14;
+    dot.style.left = `${startX}px`;
+    dot.style.top = `${startY}px`;
+    document.body.appendChild(dot);
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const anim = dot.animate(
+      [
+        { transform: "translate(0, 0) scale(1)", opacity: 1, offset: 0 },
+        { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 90}px) scale(1.15)`, opacity: 1, offset: 0.45 },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.35)`, opacity: 0.9, offset: 1 }
+      ],
+      { duration: 640, easing: "cubic-bezier(0.45, 0, 0.2, 1)" }
+    );
+    anim.onfinish = () => dot.remove();
   }
 
   function lineDetailsText(item) {
@@ -746,61 +842,288 @@
 
   el.paymentResultClose.addEventListener("click", () => el.paymentResultModalBackdrop.classList.remove("open"));
 
-  // ---------------- Mini header (aparece al bajar, el hero grande no queda fijo) ----------------
-  function setupMiniHeaderScroll() {
-    if (!el.heroBanner) return;
-    let visible = false;
-    const toggle = () => {
-      const shouldShow = window.scrollY > el.heroBanner.offsetHeight - 60;
-      if (shouldShow !== visible) {
-        visible = shouldShow;
-        el.miniHeader.classList.toggle("visible", visible);
-      }
-    };
-    window.addEventListener("scroll", toggle, { passive: true });
-    toggle();
+  // ---------------- Hero CTA / bottom tabs ----------------
+  let tabLockUntil = 0;
+  const BOTTOM_TABS = [el.bottomTabInicio, el.bottomTabMenu, el.bottomTabCart, el.bottomTabLocal];
+
+  function setActiveBottomTab(tab) {
+    BOTTOM_TABS.forEach((btn) => btn.classList.toggle("active", btn === tab));
+    el.bottomTabs.style.setProperty("--tab-index", Math.max(0, BOTTOM_TABS.indexOf(tab)));
   }
 
-  // ---------------- Hero CTA / bottom tabs ----------------
+  function syncBottomTab() {
+    if (document.querySelector(".modal-backdrop.open")) return;
+    if (performance.now() < tabLockUntil) return;
+    const heroH = el.heroBanner ? el.heroBanner.offsetHeight : 400;
+    setActiveBottomTab(window.scrollY > heroH * 0.6 ? el.bottomTabMenu : el.bottomTabInicio);
+  }
+
+  function lockTabs(ms = 900) {
+    tabLockUntil = performance.now() + ms;
+  }
+
   if (el.heroCta) {
     el.heroCta.addEventListener("click", () => {
+      haptic(8);
+      lockTabs();
+      setActiveBottomTab(el.bottomTabMenu);
       el.categoryTabs.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }
 
-  function setActiveBottomTab(tab) {
-    [el.bottomTabInicio, el.bottomTabMenu, el.bottomTabCart, el.bottomTabLocal].forEach((btn) => {
-      if (btn) btn.classList.toggle("active", btn === tab);
+  el.bottomTabInicio.addEventListener("click", () => {
+    haptic(6);
+    lockTabs();
+    setActiveBottomTab(el.bottomTabInicio);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  el.bottomTabMenu.addEventListener("click", () => {
+    haptic(6);
+    lockTabs();
+    setActiveBottomTab(el.bottomTabMenu);
+    window.scrollTo({ top: Math.max(0, el.categoryTabs.offsetTop - 8), behavior: "smooth" });
+  });
+  el.bottomTabCart.addEventListener("click", () => {
+    haptic(6);
+    openCartModal();
+  });
+  el.bottomTabLocal.addEventListener("click", () => {
+    haptic(6);
+    setActiveBottomTab(el.bottomTabLocal);
+    const phone = (state.catalog?.whatsappNumber || "").replace(/\D/g, "");
+    if (phone) window.open(`https://wa.me/${phone}`, "_blank");
+    setTimeout(syncBottomTab, 700);
+  });
+  el.cartPill.addEventListener("click", () => {
+    haptic(6);
+    openCartModal();
+  });
+
+  // ---------------- Animaciones y comportamiento tipo app ----------------
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let revealObserver = null;
+  function setupReveal() {
+    if (revealObserver) revealObserver.disconnect();
+    const nodes = Array.from(el.catalog.querySelectorAll(".product-card, .section-header"));
+    nodes.forEach((n) => n.classList.add("reveal"));
+
+    const show = (node, animate) => {
+      if (!animate) node.classList.add("no-anim");
+      node.classList.add("in");
+      if (node.dataset.pid) state.seenProducts.add(node.dataset.pid);
+      const done = () => {
+        node.style.transitionDelay = "";
+        node.classList.add("done");
+      };
+      if (animate) node.addEventListener("transitionend", done, { once: true });
+      else done();
+    };
+
+    if (prefersReducedMotion || !("IntersectionObserver" in window)) {
+      nodes.forEach((n) => show(n, false));
+      return;
+    }
+
+    revealObserver = new IntersectionObserver(
+      (entries) => {
+        let order = 0;
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.style.transitionDelay = `${Math.min(order, 5) * 70}ms`;
+          order++;
+          show(entry.target, true);
+          revealObserver.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -6% 0px", threshold: 0.06 }
+    );
+
+    nodes.forEach((n) => {
+      if (n.dataset.pid && state.seenProducts.has(n.dataset.pid)) show(n, false);
+      else revealObserver.observe(n);
     });
   }
 
-  if (el.bottomTabInicio) {
-    el.bottomTabInicio.addEventListener("click", () => {
-      setActiveBottomTab(el.bottomTabInicio);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+  function setupImageFades() {
+    el.catalog.querySelectorAll(".product-thumb").forEach((img) => {
+      const ok = () => img.classList.add("loaded");
+      const fail = () => {
+        img.removeAttribute("src");
+        img.classList.add("loaded", "failed");
+      };
+      if (img.complete) {
+        img.naturalWidth ? ok() : fail();
+      } else {
+        img.addEventListener("load", ok, { once: true });
+        img.addEventListener("error", fail, { once: true });
+      }
     });
-  }
-  if (el.bottomTabMenu) {
-    el.bottomTabMenu.addEventListener("click", () => {
-      setActiveBottomTab(el.bottomTabMenu);
-      el.catalog.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }
-  if (el.bottomTabCart) {
-    el.bottomTabCart.addEventListener("click", () => {
-      setActiveBottomTab(el.bottomTabCart);
-      openCartModal();
-    });
-  }
-  if (el.bottomTabLocal) {
-    el.bottomTabLocal.addEventListener("click", () => {
-      setActiveBottomTab(el.bottomTabLocal);
-      const phone = (state.catalog?.whatsappNumber || "").replace(/\D/g, "");
-      if (phone) window.open(`https://wa.me/${phone}`, "_blank");
-    });
+    const heroImg = document.querySelector(".hero-image");
+    if (heroImg) {
+      const ok = () => heroImg.classList.add("loaded");
+      if (heroImg.complete) ok();
+      else heroImg.addEventListener("load", ok, { once: true });
+    }
   }
 
+  let spyLockUntil = 0;
+  let activeCategoryTab = null;
+  function setActiveCategoryTab(tab) {
+    if (!tab || tab === activeCategoryTab) return;
+    activeCategoryTab = tab;
+    el.categoryTabs.querySelectorAll(".category-tab").forEach((b) => b.classList.toggle("active", b === tab));
+    const left = tab.offsetLeft - (el.categoryTabs.clientWidth - tab.offsetWidth) / 2;
+    el.categoryTabs.scrollTo({ left: Math.max(0, left), behavior: prefersReducedMotion ? "auto" : "smooth" });
+  }
+
+  function updateScrollState() {
+    const y = window.scrollY;
+    const heroH = el.heroBanner ? el.heroBanner.offsetHeight : 400;
+
+    el.miniHeader.classList.toggle("visible", y > heroH - 60);
+
+    if (el.heroBanner && !prefersReducedMotion) {
+      const p = Math.min(1, Math.max(0, y / heroH));
+      el.heroBanner.style.setProperty("--p", p.toFixed(3));
+    }
+
+    const stickyTop = el.miniHeader.offsetHeight || 64;
+    const slotTop = el.categoryTabsSlot.getBoundingClientRect().top;
+    el.categoryTabs.classList.toggle("stuck", y > 0 && slotTop <= stickyTop);
+
+    if (state.catalog && performance.now() > spyLockUntil) {
+      const line = stickyTop + el.categoryTabs.offsetHeight + 24;
+      let current = null;
+      el.catalog.querySelectorAll(".category-section").forEach((sec) => {
+        if (sec.getBoundingClientRect().top <= line) current = sec;
+      });
+      const tabs = el.categoryTabs.querySelectorAll(".category-tab");
+      const tab = current
+        ? Array.from(tabs).find((t) => t.dataset.target === current.id)
+        : tabs[0];
+      setActiveCategoryTab(tab);
+    }
+
+    syncBottomTab();
+  }
+
+  function setupScrollEffects() {
+    let ticking = false;
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          updateScrollState();
+          ticking = false;
+        });
+      },
+      { passive: true }
+    );
+    const syncMiniHeight = () =>
+      document.documentElement.style.setProperty("--mini-h", `${el.miniHeader.offsetHeight}px`);
+    window.addEventListener("resize", () => {
+      syncMiniHeight();
+      measureTabsSlot();
+      updateScrollState();
+    });
+    syncMiniHeight();
+    updateScrollState();
+  }
+
+  function setupSheets() {
+    const backdrops = document.querySelectorAll(".modal-backdrop");
+
+    backdrops.forEach((backdrop) => {
+      const modal = backdrop.querySelector(".modal");
+      if (!modal) return;
+
+      const handle = document.createElement("div");
+      handle.className = "sheet-handle";
+      handle.setAttribute("aria-hidden", "true");
+      modal.prepend(handle);
+
+      backdrop.addEventListener("click", (e) => {
+        if (e.target === backdrop) backdrop.classList.remove("open");
+      });
+
+      let startY = 0;
+      let dy = 0;
+      let startTime = 0;
+      let armed = false;
+      let dragging = false;
+
+      modal.addEventListener(
+        "touchstart",
+        (e) => {
+          if (e.touches.length !== 1) return;
+          startY = e.touches[0].clientY;
+          startTime = Date.now();
+          dy = 0;
+          dragging = false;
+          armed = modal.scrollTop <= 0;
+        },
+        { passive: true }
+      );
+
+      modal.addEventListener(
+        "touchmove",
+        (e) => {
+          if (!armed) return;
+          const delta = e.touches[0].clientY - startY;
+          if (!dragging) {
+            if (delta > 10 && modal.scrollTop <= 0) {
+              dragging = true;
+              modal.classList.add("dragging");
+            } else if (delta < -4) {
+              armed = false;
+              return;
+            } else {
+              return;
+            }
+          }
+          dy = Math.max(0, delta);
+          modal.style.transform = `translateY(${dy}px)`;
+          backdrop.style.background = `rgba(10, 6, 5, ${0.72 * (1 - Math.min(1, dy / 420))})`;
+          if (e.cancelable) e.preventDefault();
+        },
+        { passive: false }
+      );
+
+      const endDrag = () => {
+        if (!dragging) return;
+        dragging = false;
+        modal.classList.remove("dragging");
+        const velocity = dy / Math.max(1, Date.now() - startTime);
+        const shouldClose = dy > 110 || (velocity > 0.6 && dy > 40);
+        modal.style.transform = "";
+        backdrop.style.background = "";
+        if (shouldClose) {
+          haptic(6);
+          backdrop.classList.remove("open");
+        }
+        dy = 0;
+      };
+      modal.addEventListener("touchend", endDrag);
+      modal.addEventListener("touchcancel", endDrag);
+    });
+
+    const syncOpenState = () => {
+      const anyOpen = !!document.querySelector(".modal-backdrop.open");
+      document.body.classList.toggle("modal-open", anyOpen);
+      if (el.cartModalBackdrop.classList.contains("open")) setActiveBottomTab(el.bottomTabCart);
+      else if (!anyOpen) syncBottomTab();
+    };
+    const observer = new MutationObserver(syncOpenState);
+    backdrops.forEach((b) => observer.observe(b, { attributes: true, attributeFilter: ["class"] }));
+  }
+
+  setupSheets();
+  setupScrollEffects();
+
+  renderCartBadge();
   loadCatalog();
   handlePaymentReturn();
-  setupMiniHeaderScroll();
 })();
