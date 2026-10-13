@@ -31,6 +31,16 @@ function guarnicionVariant() {
   };
 }
 
+function panVariant() {
+  return {
+    id: "pan",
+    name: "Tipo de pan",
+    multiple: false,
+    required: true,
+    options: ["Francés", "Criollo", "Ciabatta"]
+  };
+}
+
 function coccionVariant() {
   return {
     id: "coccion",
@@ -67,7 +77,7 @@ function defaultCatalog() {
             "Vacío especial de autor",
             "Vacío de ternera horneado a lenta cocción en reducción de vino tinto desmechado con hortalizas de estación y hierbas aromáticas, y lluvia de queso provolone.",
             IMG_SANDWICH,
-            [],
+            [panVariant()],
             7000,
             sandwichExtras()
           ),
@@ -76,7 +86,7 @@ function defaultCatalog() {
             "Pollo al Funghi",
             "Pechugas de pollo doradas y desmechadas en salsa de champiñones, portobellos, verdeo, manteca y crema.",
             IMG_SANDWICH,
-            [],
+            [panVariant()],
             7000
           ),
           product(
@@ -84,7 +94,7 @@ function defaultCatalog() {
             "Bondiola a la Barbacoa",
             "Bondiola marinada y cocida en reducción de cerveza negra, ajo, salsa barbacoa y rub seco de pimentón.",
             IMG_SANDWICH,
-            [],
+            [panVariant()],
             7000
           ),
           product(
@@ -92,7 +102,7 @@ function defaultCatalog() {
             "Osobuco al Malbec",
             "Osobuco al disco cocido en vino Malbec, entre cebollas, zanahoria, ajo, apio, pimentón y caldo de verduras, desmechado.",
             IMG_SANDWICH,
-            [],
+            [panVariant()],
             7000
           ),
           product(
@@ -100,7 +110,7 @@ function defaultCatalog() {
             "Bondiola Honey Mustard",
             "Bondiola cocida a baja temperatura durante varias horas con cebollas caramelizadas, mostaza, miel y finas hierbas.",
             IMG_SANDWICH,
-            [],
+            [panVariant()],
             7000
           )
         ]
