@@ -2014,3 +2014,75 @@ body.has-cart .toast {
 .cart-button .cart-count.is-zero {
   display: none;
 }
+
+/* =====================================================================
+   HERO v3 — composición ordenada: texto a la izquierda, foto grande de fondo a la derecha
+   ===================================================================== */
+.hero-banner {
+  padding: calc(14px + var(--safe-top)) 0 0 16px;
+}
+
+.hero-banner .hero-inner {
+  display: block;
+  position: relative;
+  min-height: 340px;
+  margin-top: 0;
+  padding-bottom: 0;
+}
+
+.hero-banner .hero-copy {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  width: 58%;
+  max-width: 270px;
+  padding: 4px 0 44px;
+}
+
+.hero-banner .brand-logo {
+  width: min(200px, 56vw);
+}
+
+.hero-banner .hero-ribbon {
+  display: block;
+  margin: 22px 0 0;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  text-align: left;
+  max-width: 158px;
+  font-size: clamp(11px, 3.2vw, 13px);
+  line-height: 1.6;
+  letter-spacing: 1.2px;
+  color: var(--dorado);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.hero-banner .hero-ribbon::before {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.hero-banner .hero-cta {
+  margin-top: 26px;
+  padding: 12px 24px;
+  font-size: 14px;
+}
+
+.hero-banner .hero-image {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 62%;
+  max-width: 310px;
+  height: auto;
+  aspect-ratio: 360 / 430;
+  margin: 0;
+  z-index: 1;
+  filter: saturate(1.12) contrast(1.06) brightness(1.08) drop-shadow(-8px 0 16px rgba(0, 0, 0, 0.4));
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 24%), linear-gradient(180deg, transparent 0%, #000 34%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 24%), linear-gradient(180deg, transparent 0%, #000 34%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
