@@ -2086,3 +2086,75 @@ body.has-cart .toast {
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
 }
+
+/* =====================================================================
+   HERO POSTER — el hero es el póster que pidió el cliente (título + carne)
+   ===================================================================== */
+.hero-banner.hero-poster {
+  padding: 0;
+  background: #050403;
+  overflow: hidden;
+}
+
+.hero-banner.hero-poster::before {
+  display: none;
+}
+
+.hero-poster-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 368 / 518;
+  object-fit: cover;
+}
+
+.hero-poster::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 16%;
+  z-index: 1;
+  opacity: 1;
+  mix-blend-mode: normal;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, rgba(18, 18, 18, 0.7) 100%);
+}
+
+.hero-poster .header-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  padding: calc(14px + var(--safe-top)) 16px 0 16px;
+}
+
+.hero-poster .menu-toggle {
+  background: rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+body:not(.ready) .hero-poster-img {
+  opacity: 0;
+}
+
+body.ready .hero-poster-img {
+  animation: posterIn 1.2s var(--ease-out) both;
+}
+
+@keyframes posterIn {
+  from { opacity: 0; transform: scale(1.06); }
+  to { opacity: 1; transform: none; }
+}
+
+.hero-banner.hero-poster .hero-poster-img {
+  translate: 0 calc(var(--p, 0) * 40px);
+  scale: calc(1 + var(--p, 0) * 0.05);
+}
