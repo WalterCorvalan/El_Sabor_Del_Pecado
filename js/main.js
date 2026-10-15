@@ -213,6 +213,17 @@
     });
   }
 
+  function renderStoreBanner() {
+    const banner = document.getElementById("storeBanner");
+    if (!banner) return;
+    const closed = storeIsClosed();
+    banner.classList.toggle("hidden", !closed);
+    if (closed) {
+      const message = state.catalog.closedMessage || "Por el momento no estamos tomando pedidos. ¡Volvemos pronto!";
+      banner.innerHTML = `<div><strong>Local cerrado</strong>${escapeHtml(message)}</div>`;
+    }
+  }
+
   function measureTabsSlot() {
     if (el.categoryTabs.classList.contains("stuck")) return;
     el.categoryTabsSlot.style.height = `${el.categoryTabs.offsetHeight}px`;
@@ -220,6 +231,7 @@
 
   function renderCatalog() {
     el.loadingState.remove();
+    renderStoreBanner();
 
     if (!state.catalog.categories.length) {
       el.catalog.innerHTML = '<div class="empty-state">Todavía no hay productos cargados.</div>';
@@ -285,11 +297,24 @@
     });
   }
 
+  const ZOOM_ICON = svg('<circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8M10.5 8v5M8 10.5h5"/>');
+
+  function storeIsClosed() {
+    return !!state.catalog && state.catalog.storeOpen === false;
+  }
+
   function productCardHtml(category, product) {
     const img = product.image || "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=900&q=80";
+    const soldOut = product.available === false;
+    const closed = storeIsClosed();
+    const buttonLabel = soldOut ? "Agotado" : closed ? "Cerrado" : "Agregar";
     return `
-      <article class="product-card reveal" data-pid="${escapeHtml(product.id)}">
-        <img class="product-thumb" src="${escapeHtml(img)}" alt="${escapeHtml(product.name)}" loading="lazy" />
+      <article class="product-card reveal${soldOut ? " is-sold-out" : ""}" data-pid="${escapeHtml(product.id)}">
+        <div class="thumb-wrap" role="button" tabindex="0" aria-label="Ampliar foto de ${escapeHtml(product.name)}">
+          ${soldOut ? '<span class="sold-out-tag">Agotado</span>' : ""}
+          <img class="product-thumb" src="${escapeHtml(img)}" alt="${escapeHtml(product.name)}" loading="lazy" />
+          <span class="thumb-zoom">${ZOOM_ICON}</span>
+        </div>
         <div class="product-info">
           <h4>${escapeHtml(product.name)}</h4>
           <p>${escapeHtml(product.description || "")}</p>
@@ -300,14 +325,36 @@
               <span class="qty-value">1</span>
               <button type="button" class="qty-plus" aria-label="Sumar">+</button>
             </div>
-            <button class="btn-add-sm" data-product-open data-category-id="${category.id}" data-product-id="${product.id}">
-              Agregar
+            <button class="btn-add-sm" data-product-open data-category-id="${category.id}" data-product-id="${product.id}"${soldOut || closed ? " disabled" : ""}>
+              ${buttonLabel}
             </button>
           </div>
         </div>
       </article>
     `;
   }
+
+  // ---------------- Zoom de fotos ----------------
+  function openPhoto(src, name) {
+    if (!window.Lightbox || !src) return;
+    haptic(6);
+    window.Lightbox.open({ src, alt: name, caption: name });
+  }
+
+  el.catalog.addEventListener("click", (e) => {
+    const wrap = e.target.closest(".thumb-wrap");
+    if (!wrap || wrap.classList.contains("is-failed")) return;
+    const img = wrap.querySelector(".product-thumb");
+    openPhoto(img?.currentSrc || img?.src, img?.alt || "");
+  });
+
+  el.catalog.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const wrap = e.target.closest(".thumb-wrap");
+    if (!wrap) return;
+    e.preventDefault();
+    wrap.click();
+  });
 
   // ---------------- Modal de producto (variantes + cantidad) ----------------
   function openProductModal(categoryId, productId, initialQty = 1) {
@@ -368,7 +415,12 @@
       `
       : "";
 
+    const photoHtml = product.image
+      ? `<div class="modal-photo" role="button" tabindex="0" aria-label="Ampliar foto"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" /><span class="thumb-zoom">${ZOOM_ICON}</span></div>`
+      : "";
+
     el.productModalBody.innerHTML = `
+      ${photoHtml}
       ${variantsHtml}
       ${extrasHtml}
       <div class="variant-group">
@@ -384,6 +436,15 @@
         <textarea id="modalNotes" rows="2" placeholder="Ej: sin tomate, bien cocido, etc." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:var(--negro);color:var(--blanco);font-size:14px;font-family:inherit;"></textarea>
       </div>
     `;
+
+    const modalPhoto = el.productModalBody.querySelector(".modal-photo");
+    if (modalPhoto) {
+      const photoImg = modalPhoto.querySelector("img");
+      if (photoImg.complete && photoImg.naturalWidth) photoImg.classList.add("loaded");
+      photoImg.addEventListener("load", () => photoImg.classList.add("loaded"), { once: true });
+      photoImg.addEventListener("error", () => modalPhoto.classList.add("is-failed"), { once: true });
+      modalPhoto.addEventListener("click", () => openPhoto(photoImg.currentSrc || photoImg.src, product.name));
+    }
 
     document.getElementById("modalQtyMinus").addEventListener("click", () => {
       currentProductContext.qty = Math.max(1, currentProductContext.qty - 1);
@@ -401,6 +462,10 @@
 
   el.productModalConfirm.addEventListener("click", () => {
     if (!currentProductContext) return;
+    if (storeIsClosed()) {
+      showToast("El local está cerrado por ahora");
+      return;
+    }
     const { category, product, qty } = currentProductContext;
     const variants = product.variants || [];
 
@@ -610,6 +675,10 @@
 
   // ---------------- Checkout ----------------
   el.goToCheckout.addEventListener("click", () => {
+    if (storeIsClosed()) {
+      showToast("El local está cerrado por ahora");
+      return;
+    }
     if (!state.cart.length) {
       showToast("Agregá algo al carrito primero");
       return;
@@ -951,6 +1020,7 @@
       const fail = () => {
         img.removeAttribute("src");
         img.classList.add("loaded", "failed");
+        img.closest(".thumb-wrap")?.classList.add("is-failed");
       };
       if (img.complete) {
         img.naturalWidth ? ok() : fail();

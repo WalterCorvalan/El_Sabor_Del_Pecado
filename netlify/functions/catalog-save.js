@@ -14,6 +14,8 @@ function validateCatalog(catalog) {
     return "El número de WhatsApp debe tener solo dígitos (con código de país, sin + ni espacios)";
   }
   if (!Array.isArray(catalog.categories)) return "Faltan las categorías";
+  if (catalog.storeOpen !== undefined && typeof catalog.storeOpen !== "boolean") return "El estado del local es inválido";
+  if (catalog.closedMessage !== undefined && typeof catalog.closedMessage !== "string") return "El mensaje de local cerrado es inválido";
 
   for (const category of catalog.categories) {
     if (!isNonEmptyString(category.id) || !isNonEmptyString(category.name)) {
@@ -30,6 +32,17 @@ function validateCatalog(catalog) {
       }
       if (product.variants && !Array.isArray(product.variants)) {
         return `Las variantes de ${product.name} son inválidas`;
+      }
+      if (product.extras && !Array.isArray(product.extras)) {
+        return `Los extras de ${product.name} son inválidos`;
+      }
+      for (const extra of product.extras || []) {
+        if (!isNonEmptyString(extra.id) || !isNonEmptyString(extra.name)) {
+          return `Un extra de ${product.name} no tiene id/nombre`;
+        }
+        if (typeof extra.price !== "number" || Number.isNaN(extra.price) || extra.price < 0) {
+          return `El extra ${extra.name} de ${product.name} tiene un precio inválido`;
+        }
       }
       for (const variant of product.variants || []) {
         if (!isNonEmptyString(variant.id) || !isNonEmptyString(variant.name)) {

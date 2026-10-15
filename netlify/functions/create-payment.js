@@ -54,6 +54,10 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: "No se pudo preparar el pago" }) };
   }
 
+  if (catalog.storeOpen === false) {
+    return { statusCode: 400, body: JSON.stringify({ error: "El local está cerrado por ahora" }) };
+  }
+
   const productIndex = new Map();
   for (const category of catalog.categories || []) {
     for (const product of category.products || []) {
@@ -68,6 +72,10 @@ exports.handler = async (event) => {
     const product = productIndex.get(line.productId);
     if (!product) {
       return { statusCode: 400, body: JSON.stringify({ error: `Producto no encontrado: ${line.productId}` }) };
+    }
+
+    if (product.available === false) {
+      return { statusCode: 400, body: JSON.stringify({ error: `${product.name} está agotado` }) };
     }
 
     const qty = Number(line.qty);
