@@ -2424,3 +2424,113 @@ body.ready .hero-poster-img {
   letter-spacing: 0.4px;
   font-size: 16px;
 }
+
+/* =====================================================================
+   ANIMACIÓN DE "AGREGAR AL CARRITO": botón -> círculo cargando -> tilde -> bolita al pedido
+   ===================================================================== */
+.modal > .btn-gold {
+  display: block;
+  height: 50px;
+  padding: 0 20px;
+  margin-left: auto;
+  margin-right: auto;
+  transition: width 0.45s var(--ease-out), border-radius 0.45s var(--ease-out), background 0.3s ease,
+    box-shadow 0.3s ease, transform 0.15s ease;
+}
+
+.modal > .btn-gold.is-loading,
+.modal > .btn-gold.is-done {
+  width: 50px !important;
+  padding: 0;
+  font-size: 0;
+  pointer-events: none;
+}
+
+.modal > .btn-gold.is-loading::after,
+.modal > .btn-gold.is-done::after {
+  display: none;
+}
+
+.modal > .btn-gold.is-loading::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border-radius: 50%;
+  border: 3px solid rgba(20, 7, 6, 0.18);
+  border-top-color: #140706;
+  animation: btnSpin 0.65s linear infinite;
+}
+
+.modal > .btn-gold.is-done {
+  background: #2e7d32;
+  box-shadow: 0 0 0 6px var(--sheet-bg), 0 10px 26px rgba(46, 125, 50, 0.55);
+  animation: donePop 0.5s var(--spring);
+}
+
+.btn-check {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 28px;
+  height: 28px;
+}
+
+.btn-check path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 26;
+  stroke-dashoffset: 26;
+  animation: drawCheck 0.38s ease 0.12s forwards;
+}
+
+@keyframes btnSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes drawCheck {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes donePop {
+  0% { transform: scale(0.86); }
+  60% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
+/* La barra del pedido y la bolsa reaccionan cuando llega el producto */
+.cart-pill.ping {
+  animation: pillPing 0.85s ease-out;
+}
+
+.cart-pill.ping .cart-pill-icon,
+.bottom-tab.ping .bottom-tab-icon .ico {
+  animation: bagJiggle 0.75s ease;
+  transform-origin: 50% 20%;
+}
+
+@keyframes pillPing {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 16px 34px -8px rgba(142, 0, 0, 0.75), 0 0 0 0 rgba(255, 193, 7, 0.8);
+  }
+  30% { transform: scale(1.04); }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 16px 34px -8px rgba(142, 0, 0, 0.75), 0 0 0 24px rgba(255, 193, 7, 0);
+  }
+}
+
+@keyframes bagJiggle {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-16deg); }
+  40% { transform: rotate(12deg); }
+  60% { transform: rotate(-8deg); }
+  80% { transform: rotate(4deg); }
+}

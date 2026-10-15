@@ -492,12 +492,59 @@
 
     const notes = document.getElementById("modalNotes")?.value.trim() || "";
 
-    addToCart(category, product, qty, selections, extras, notes);
-    flyToCart(el.productModalConfirm);
-    haptic(12);
-    el.productModalBackdrop.classList.remove("open");
-    showToast(`${product.name} agregado al carrito`);
+    if (addingToCart) return;
+
+    if (prefersReducedMotion) {
+      addToCart(category, product, qty, selections, extras, notes);
+      haptic(12);
+      el.productModalBackdrop.classList.remove("open");
+      showToast(`${product.name} agregado al carrito`);
+      return;
+    }
+
+    // Animación: el botón se vuelve un círculo con anillo girando, pasa a tilde verde
+    // y recién ahí se suma al carrito y la bolita vuela hasta el pedido.
+    addingToCart = true;
+    const btn = el.productModalConfirm;
+    btn.classList.add("is-loading");
+
+    setTimeout(() => {
+      addToCart(category, product, qty, selections, extras, notes);
+      btn.classList.remove("is-loading");
+      btn.classList.add("is-done");
+      btn.insertAdjacentHTML(
+        "beforeend",
+        '<svg class="btn-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>'
+      );
+      haptic(12);
+    }, ADD_LOADING_MS);
+
+    setTimeout(() => {
+      flyToCart(btn);
+      el.productModalBackdrop.classList.remove("open");
+      showToast(`${product.name} agregado al carrito`);
+      setTimeout(celebrateCart, 560);
+      setTimeout(() => {
+        btn.classList.remove("is-loading", "is-done");
+        btn.querySelector(".btn-check")?.remove();
+        addingToCart = false;
+      }, 500);
+    }, ADD_LOADING_MS + ADD_DONE_MS);
   });
+
+  let addingToCart = false;
+  const ADD_LOADING_MS = 520;
+  const ADD_DONE_MS = 520;
+
+  function celebrateCart() {
+    [el.cartPill, el.bottomTabCart].forEach((node) => {
+      if (!node) return;
+      node.classList.remove("ping");
+      void node.offsetWidth;
+      node.classList.add("ping");
+      setTimeout(() => node.classList.remove("ping"), 900);
+    });
+  }
 
   // ---------------- Carrito ----------------
   function addToCart(category, product, qty, selections, extras = [], notes = "") {
