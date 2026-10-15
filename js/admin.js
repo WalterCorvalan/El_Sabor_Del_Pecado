@@ -425,6 +425,14 @@
         </div>
         <a class="inline-link" id="whatsappTest" href="#" target="_blank" rel="noopener">Probar este número en WhatsApp</a>
       </div>
+
+      <div class="card">
+        <h2>Menú inicial</h2>
+        <p class="hint">Vuelve el menú a la carta base con los productos, fotos y precios cargados de fábrica. <strong>Pisa todos los cambios que hayas hecho en el menú.</strong> Se conservan el WhatsApp y el estado del local.</p>
+        <div class="field">
+          <button class="btn btn-danger btn-sm" type="button" id="resetMenuBtn">Restaurar menú inicial</button>
+        </div>
+      </div>
     `;
     updateWhatsappLink();
   }
@@ -444,6 +452,42 @@
     } else if (e.target.id === "closedMessage") {
       catalog.closedMessage = e.target.value;
       markDirty();
+    }
+  });
+
+  el.tabAjustes.addEventListener("click", async (e) => {
+    if (e.target.id !== "resetMenuBtn") return;
+    if (!confirm("Esto reemplaza TODO el menú por la carta inicial y borra tus cambios. ¿Continuar?")) return;
+    if (!confirm("Última confirmación: no se puede deshacer. ¿Restaurar el menú inicial?")) return;
+
+    const btn = e.target;
+    btn.disabled = true;
+    try {
+      const res = await fetch("/api/catalog-reset", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        logout("Tu sesión expiró, ingresá de nuevo");
+        return;
+      }
+      if (!res.ok) {
+        toast(data.error || "No se pudo restaurar el menú", "error");
+        return;
+      }
+      catalog = data.catalog;
+      openCats.clear();
+      openProds.clear();
+      if (catalog.categories.length) openCats.add(catalog.categories[0].id);
+      markSaved();
+      renderAll();
+      toast("Menú restaurado. Ya está en el sitio", "ok");
+    } catch (err) {
+      console.error(err);
+      toast("Error de conexión", "error");
+    } finally {
+      btn.disabled = false;
     }
   });
 

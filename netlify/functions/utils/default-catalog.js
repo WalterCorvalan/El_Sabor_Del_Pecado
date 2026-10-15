@@ -51,6 +51,22 @@ function coccionVariant() {
   };
 }
 
+function gustosVariant() {
+  return {
+    id: "gustos",
+    name: "Gustos (elegí los que quieras)",
+    multiple: true,
+    required: true,
+    options: [
+      "Vacío braseado al vino tinto",
+      "Pollo al Funghi",
+      "Bondiola a la Barbacoa",
+      "Osobuco al Malbec",
+      "Bondiola Honey Mustard"
+    ]
+  };
+}
+
 function product(id, name, description, image, variants = [], price = 0, extras = []) {
   return { id, name, description, price, image, variants, extras };
 }
@@ -78,7 +94,7 @@ function defaultCatalog() {
             "Vacío de ternera horneado a lenta cocción en reducción de vino tinto desmechado con hortalizas de estación y hierbas aromáticas, y lluvia de queso provolone.",
             "images/menu/sandwich-vacio.webp",
             [panVariant()],
-            7000,
+            22000,
             sandwichExtras()
           ),
           product(
@@ -87,7 +103,7 @@ function defaultCatalog() {
             "Pechugas de pollo doradas y desmechadas en salsa de champiñones, portobellos, verdeo, manteca y crema.",
             "images/menu/sandwich-pollo-funghi.webp",
             [panVariant()],
-            7000
+            20000
           ),
           product(
             "sandwich-bondiola-barbacoa",
@@ -95,7 +111,7 @@ function defaultCatalog() {
             "Bondiola marinada y cocida en reducción de cerveza negra, ajo, salsa barbacoa y rub seco de pimentón.",
             "images/menu/sandwich-bondiola-barbacoa.webp",
             [panVariant()],
-            7000
+            18000
           ),
           product(
             "sandwich-osobuco-malbec",
@@ -103,7 +119,7 @@ function defaultCatalog() {
             "Osobuco al disco cocido en vino Malbec, entre cebollas, zanahoria, ajo, apio, pimentón y caldo de verduras, desmechado.",
             "images/menu/sandwich-osobuco-malbec.webp",
             [panVariant()],
-            7000
+            20000
           ),
           product(
             "sandwich-bondiola-honey-mustard",
@@ -111,7 +127,7 @@ function defaultCatalog() {
             "Bondiola cocida a baja temperatura durante varias horas con cebollas caramelizadas, mostaza, miel y finas hierbas.",
             "images/menu/sandwich-bondiola-honey-mustard.webp",
             [panVariant()],
-            7000
+            18000
           )
         ]
       },
@@ -125,7 +141,7 @@ function defaultCatalog() {
             "Lonjas de vacío de ternera horneado a lenta cocción en reducción de vino tinto con hortalizas de estación y hierbas aromáticas. Guarnición a elección.",
             "images/menu/plato-vacio.webp",
             [guarnicionVariant()],
-            9000
+            22000
           ),
           product(
             "plato-pollo-funghi",
@@ -133,7 +149,7 @@ function defaultCatalog() {
             "Pollo deshuesado dorado en salsa de champiñones, portobellos, verdeo, manteca y crema. Guarnición a elección.",
             "images/menu/plato-pollo-funghi.webp",
             [guarnicionVariant()],
-            9000
+            22000
           ),
           product(
             "plato-bondiola-barbacoa",
@@ -141,7 +157,7 @@ function defaultCatalog() {
             "Rodajas de bondiola marinada y cocida en reducción de cerveza negra, ajo, salsa barbacoa y rub seco de pimentón. Guarnición a elección.",
             "images/menu/plato-bondiola-barbacoa.webp",
             [guarnicionVariant()],
-            9000
+            22000
           ),
           product(
             "plato-osobuco-malbec",
@@ -149,7 +165,7 @@ function defaultCatalog() {
             "Rodajas de osobuco al disco cocido en vino Malbec, entre cebollas, zanahoria, ajo, apio, pimentón y caldo de verduras. Guarnición a elección.",
             "images/menu/plato-osobuco-malbec.webp",
             [guarnicionVariant()],
-            9000
+            22000
           ),
           product(
             "plato-bondiola-honey-mustard",
@@ -157,7 +173,7 @@ function defaultCatalog() {
             "Rodajas de bondiola cocida a baja temperatura durante varias horas con cebollas caramelizadas, mostaza, miel y finas hierbas. Guarnición a elección.",
             "images/menu/plato-bondiola-honey-mustard.webp",
             [guarnicionVariant()],
-            9000
+            22000
           )
         ]
       },
@@ -171,7 +187,7 @@ function defaultCatalog() {
             "Empanada gourmet de vacío braseado al vino tinto.",
             "images/menu/empanada-vacio.webp",
             [coccionVariant()],
-            1500
+            3000
           ),
           product(
             "empanada-pollo-funghi",
@@ -179,7 +195,7 @@ function defaultCatalog() {
             "Empanada gourmet de pollo al funghi.",
             "images/menu/empanada-pollo-funghi.webp",
             [coccionVariant()],
-            1500
+            3000
           ),
           product(
             "empanada-bondiola-barbacoa",
@@ -187,7 +203,7 @@ function defaultCatalog() {
             "Empanada gourmet de bondiola a la barbacoa.",
             "images/menu/empanada-bondiola-barbacoa.webp",
             [coccionVariant()],
-            1500
+            3000
           ),
           product(
             "empanada-osobuco-malbec",
@@ -195,7 +211,7 @@ function defaultCatalog() {
             "Empanada gourmet de osobuco al Malbec.",
             "images/menu/empanada-osobuco-malbec.webp",
             [coccionVariant()],
-            1500
+            3000
           ),
           product(
             "empanada-bondiola-honey-mustard",
@@ -203,7 +219,15 @@ function defaultCatalog() {
             "Empanada gourmet de bondiola honey mustard.",
             "images/menu/empanada-bondiola-honey-mustard.webp",
             [coccionVariant()],
-            1500
+            3000
+          ),
+          product(
+            "empanada-docena",
+            "Docena de empanadas",
+            "12 empanadas gourmet, mezcladas como quieras. Elegí los gustos y aclará en Observaciones cuántas querés de cada uno.",
+            "images/menu/empanada-vacio.webp",
+            [gustosVariant(), coccionVariant()],
+            33000
           )
         ]
       },
@@ -211,11 +235,11 @@ function defaultCatalog() {
         id: "dips",
         name: "Dips de Salsas",
         products: [
-          product("dip-glase-miel-mostaza", "Glase de miel y mostaza", "Dip de glase de miel y mostaza.", IMG_DIP, [], 800),
-          product("dip-barbacoa", "Barbacoa", "Dip de salsa barbacoa.", IMG_DIP, [], 800),
-          product("dip-mayo-tabasco", "Mayo aliñada al Tabasco", "Dip de mayonesa aliñada al Tabasco.", IMG_DIP, [], 800),
-          product("dip-honey-mustard", "Honey Mustard", "Dip de honey mustard.", IMG_DIP, [], 800),
-          product("dip-alioli-ciboulette", "Alioli con ciboulette", "Dip de alioli con ciboulette.", IMG_DIP, [], 800)
+          product("dip-glase-miel-mostaza", "Glase de miel y mostaza", "Dip de glase de miel y mostaza.", IMG_DIP, [], 1500),
+          product("dip-barbacoa", "Barbacoa", "Dip de salsa barbacoa.", IMG_DIP, [], 1500),
+          product("dip-mayo-tabasco", "Mayo aliñada al Tabasco", "Dip de mayonesa aliñada al Tabasco.", IMG_DIP, [], 1500),
+          product("dip-honey-mustard", "Honey Mustard", "Dip de honey mustard.", IMG_DIP, [], 1500),
+          product("dip-alioli-ciboulette", "Alioli con ciboulette", "Dip de alioli con ciboulette.", IMG_DIP, [], 1500)
         ]
       },
       {
