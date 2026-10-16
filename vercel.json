@@ -1,8 +1,15 @@
 {
+  "framework": null,
+  "installCommand": "npm install --omit=dev",
   "headers": [
     {
       "source": "/admin.html",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     }
   ],
   "rewrites": [
