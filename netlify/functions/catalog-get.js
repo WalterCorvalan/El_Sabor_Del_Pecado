@@ -1,5 +1,5 @@
 const { getCatalogStore } = require("./utils/blob-store");
-const { defaultCatalog } = require("./utils/default-catalog");
+const { defaultCatalog, migrateCatalog, MENU_VERSION } = require("./utils/default-catalog");
 
 exports.handler = async () => {
   try {
@@ -9,13 +9,19 @@ exports.handler = async () => {
     if (!catalog) {
       catalog = defaultCatalog();
       await store.setJSON("catalog", catalog);
+    } else if (catalog.menuVersion !== MENU_VERSION) {
+      // Menú guardado de una versión anterior: se actualiza una sola vez.
+      catalog = migrateCatalog(catalog);
+      await store.setJSON("catalog", catalog);
     }
 
+    // El CDN puede reutilizar la respuesta unos segundos: el menú carga más rápido y los
+    // cambios del admin se ven en menos de un minuto. El admin pide con un parámetro único.
     return {
       statusCode: 200,
       headers: {
         "Content-Type": "application/json",
-        "Cache-Control": "no-store"
+        "Cache-Control": "public, s-maxage=15, stale-while-revalidate=120"
       },
       body: JSON.stringify(catalog)
     };

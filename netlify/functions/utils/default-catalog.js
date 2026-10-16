@@ -78,8 +78,15 @@ function sandwichExtras() {
   ];
 }
 
+// Versión del menú inicial. Si el menú guardado tiene otra versión (por ejemplo, uno viejo que
+// se guardó antes de que existieran las fotos y los precios actuales), catalog-get lo reemplaza
+// UNA vez por el menú inicial, conservando los ajustes (WhatsApp, horarios, envío, etc.).
+// Subir este número a propósito pisa los cambios hechos en el admin: solo hacerlo si se quiere eso.
+const MENU_VERSION = 2;
+
 function defaultCatalog() {
   return {
+    menuVersion: MENU_VERSION,
     whatsappNumber: "5493856865979",
     prepTime: { pickup: "20-30", delivery: "40-50" },
     categories: [
@@ -295,4 +302,22 @@ function defaultCatalog() {
   };
 }
 
-module.exports = { defaultCatalog };
+// Ajustes que no son del menú y se conservan al reemplazar el menú guardado.
+function migrateCatalog(stored) {
+  const fresh = defaultCatalog();
+  if (!stored) return fresh;
+
+  const digits = String(stored.whatsappNumber || "").replace(/D/g, "");
+  // Un celular de 10 dígitos (sin 54 ni 9) no abre en WhatsApp: se completa el prefijo.
+  if (digits.length === 10) fresh.whatsappNumber = `549${digits}`;
+  else if (digits.length >= 8 && digits.length <= 15) fresh.whatsappNumber = digits;
+
+  if (typeof stored.storeOpen === "boolean") fresh.storeOpen = stored.storeOpen;
+  if (typeof stored.closedMessage === "string") fresh.closedMessage = stored.closedMessage;
+  if (stored.schedule) fresh.schedule = stored.schedule;
+  if (stored.delivery) fresh.delivery = stored.delivery;
+  if (stored.prepTime) fresh.prepTime = stored.prepTime;
+  return fresh;
+}
+
+module.exports = { defaultCatalog, migrateCatalog, MENU_VERSION };

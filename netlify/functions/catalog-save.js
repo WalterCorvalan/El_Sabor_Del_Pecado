@@ -2,6 +2,7 @@ const { getCatalogStore } = require("./utils/blob-store");
 const { verifyToken, getBearerToken } = require("./utils/auth");
 
 const Rules = require("../../js/rules.js");
+const { MENU_VERSION } = require("./utils/default-catalog");
 
 const MAX_BODY_BYTES = 500 * 1024;
 
@@ -62,6 +63,7 @@ function validateCatalog(catalog) {
     return "El número de WhatsApp debe tener solo dígitos (con código de país, sin + ni espacios)";
   }
   if (!Array.isArray(catalog.categories)) return "Faltan las categorías";
+  if (catalog.menuVersion !== MENU_VERSION) return "El menú se actualizó mientras editabas. Recargá el admin y volvé a hacer los cambios";
   if (catalog.storeOpen !== undefined && typeof catalog.storeOpen !== "boolean") return "El estado del local es inválido";
   if (catalog.closedMessage !== undefined && typeof catalog.closedMessage !== "string") return "El mensaje de local cerrado es inválido";
 

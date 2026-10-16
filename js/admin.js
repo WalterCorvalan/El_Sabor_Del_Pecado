@@ -185,7 +185,7 @@
 
   async function loadCatalog() {
     try {
-      const res = await fetch("/api/catalog-get", { cache: "no-store" });
+      const res = await fetch(`/api/catalog-get?fresh=${Date.now()}`, { cache: "no-store" });
       if (!res.ok) throw new Error("catalog-get " + res.status);
       catalog = await res.json();
       if (catalog.categories.length && !openCats.size) openCats.add(catalog.categories[0].id);
@@ -459,10 +459,15 @@
     updateWhatsappLink();
   }
 
+  function waNumber(value) {
+    const digits = String(value || "").replace(/\D/g, "");
+    return digits.length === 10 ? `549${digits}` : digits;
+  }
+
   function updateWhatsappLink() {
     const link = document.getElementById("whatsappTest");
     if (!link) return;
-    const digits = String(catalog.whatsappNumber || "").replace(/\D/g, "");
+    const digits = waNumber(catalog.whatsappNumber);
     link.href = digits ? `https://wa.me/${digits}` : "#";
   }
 
@@ -1306,7 +1311,7 @@
         <div class="order-who">
           <strong>${esc(order.customer?.name)}</strong>
           · <a href="tel:${esc(phoneDigits)}">${esc(order.customer?.phone)}</a>
-          ${phoneDigits ? `· <a href="https://wa.me/${esc(phoneDigits)}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
+          ${phoneDigits ? `· <a href="https://wa.me/${esc(waNumber(phoneDigits))}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
         </div>
         <div class="order-ship">${isDelivery ? "Envío a domicilio" : "Retiro en local"}${order.zone ? ` (${esc(order.zone.name)})` : ""}${isDelivery ? ` — ${esc(order.address)}` : ""}</div>
         <ul class="order-items">${items}</ul>

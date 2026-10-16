@@ -4,11 +4,8 @@
   const state = {
     catalog: null,
     cart: [], // { lineId, productId, categoryId, name, price, qty, selections: [{groupName, values:[]}] }
-    expandedCategories: new Set(),
     seenProducts: new Set()
   };
-
-  const PRODUCTS_PREVIEW_COUNT = 2;
 
   const svg = (inner) =>
     `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
@@ -172,22 +169,56 @@
   const PENDING_ORDER_KEY = "esdp_pending_order";
 
   // ---------------- Carga del catálogo ----------------
-  async function loadCatalog() {
+  const CATALOG_CACHE_KEY = "esdp_catalog_v2";
+
+  function readCachedCatalog() {
     try {
-      const res = await fetch("/api/catalog-get");
-      if (!res.ok) throw new Error("No se pudo cargar el catálogo");
-      state.catalog = await res.json();
-      state.catalog.categories = state.catalog.categories.filter((cat) => !cat.hidden);
-      renderCategoryTabs();
-      renderCatalog();
-      setupDelivery();
+      const raw = localStorage.getItem(CATALOG_CACHE_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed && Array.isArray(parsed.categories) ? parsed : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function applyCatalog(catalog, firstTime) {
+    state.catalog = catalog;
+    state.catalog.categories = state.catalog.categories.filter((cat) => !cat.hidden);
+    renderCategoryTabs();
+    renderCatalog();
+    setupDelivery();
+    if (firstTime) {
       applySavedCustomer();
       startStatusWatcher();
       countVisit();
       renderTrackBar();
+    } else {
+      lastStoreClosed = storeIsClosed();
+    }
+  }
+
+  // El menú guardado en el celular se muestra al instante y se actualiza en segundo plano
+  // (si cambió, se vuelve a dibujar). Así el sitio no espera a la red para mostrar los platos.
+  async function loadCatalog() {
+    const cached = readCachedCatalog();
+    const cachedJson = cached ? JSON.stringify(cached) : null;
+    if (cached) {
+      applyCatalog(cached, true);
+      hideSplashScreen();
+    }
+
+    try {
+      const res = await fetch("/api/catalog-get");
+      if (!res.ok) throw new Error("No se pudo cargar el catálogo");
+      const fresh = await res.json();
+      const freshJson = JSON.stringify(fresh);
+      try {
+        localStorage.setItem(CATALOG_CACHE_KEY, freshJson);
+      } catch (_) {}
+      if (freshJson !== cachedJson) applyCatalog(fresh, !cached);
     } catch (err) {
       console.error(err);
-      el.loadingState.textContent = "No pudimos cargar el menú. Probá recargar la página.";
+      if (!cached) el.loadingState.textContent = "No pudimos cargar el menú. Probá recargar la página.";
     } finally {
       hideSplashScreen();
     }
@@ -197,7 +228,7 @@
   function hideSplashScreen() {
     if (splashHidden) return;
     splashHidden = true;
-    const wait = Math.max(0, 900 - performance.now());
+    const wait = Math.max(0, 350 - performance.now());
     setTimeout(() => {
       document.body.classList.add("ready");
       if (!el.splashScreen) return;
@@ -263,20 +294,12 @@
 
     el.catalog.innerHTML = state.catalog.categories
       .map((cat) => {
-        const expanded = state.expandedCategories.has(cat.id);
-        const visibleProducts = expanded ? cat.products : cat.products.slice(0, PRODUCTS_PREVIEW_COUNT);
-        const cards = visibleProducts.map((p) => productCardHtml(cat, p)).join("");
-        const showToggle = cat.products.length > PRODUCTS_PREVIEW_COUNT;
+        const cards = cat.products.map((p) => productCardHtml(cat, p)).join("");
 
         return `
           <section class="category-section" id="${cat.id}">
             <div class="section-header">
               <h3>${escapeHtml(cat.name)}</h3>
-              ${
-                showToggle
-                  ? `<button class="ver-todos" data-toggle-category="${cat.id}">${expanded ? "Ver menos" : "Ver todos"} ›</button>`
-                  : ""
-              }
             </div>
             <div class="product-grid">${cards || '<p style="color:#9e9e9e;">Sin productos en esta categoría.</p>'}</div>
           </section>
@@ -290,18 +313,6 @@
         const card = btn.closest(".product-card");
         const initialQty = card ? Number(card.querySelector(".qty-value")?.textContent) || 1 : 1;
         openProductModal(categoryId, productId, initialQty);
-      });
-    });
-
-    el.catalog.querySelectorAll("[data-toggle-category]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const catId = btn.dataset.toggleCategory;
-        if (state.expandedCategories.has(catId)) {
-          state.expandedCategories.delete(catId);
-        } else {
-          state.expandedCategories.add(catId);
-        }
-        renderCatalog();
       });
     });
 
@@ -341,6 +352,11 @@
     }, 60000);
   }
 
+  // Las tarjetas usan una miniatura liviana; la foto completa se carga al ampliar.
+  function thumbUrl(image) {
+    return /^images\/menu\/[^/]+\.webp$/.test(image || "") ? image.replace("images/menu/", "images/menu/t/") : image;
+  }
+
   function productCardHtml(category, product) {
     const soldOut = product.available === false;
     const closed = storeIsClosed();
@@ -351,7 +367,7 @@
           product.image
             ? `<div class="thumb-wrap" role="button" tabindex="0" aria-label="Ampliar foto de ${escapeHtml(product.name)}">
           ${soldOut ? '<span class="sold-out-tag">Agotado</span>' : ""}
-          <img class="product-thumb" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" loading="lazy" />
+          <img class="product-thumb" src="${escapeHtml(thumbUrl(product.image))}" data-full="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" loading="lazy" decoding="async" />
           <span class="thumb-zoom">${ZOOM_ICON}</span>
         </div>`
             : `<div class="thumb-wrap is-failed no-photo" aria-hidden="true">
@@ -389,7 +405,7 @@
     const wrap = e.target.closest(".thumb-wrap");
     if (!wrap || wrap.classList.contains("is-failed")) return;
     const img = wrap.querySelector(".product-thumb");
-    openPhoto(img?.currentSrc || img?.src, img?.alt || "");
+    openPhoto(img?.dataset.full || img?.currentSrc || img?.src, img?.alt || "");
   });
 
   el.catalog.addEventListener("keydown", (e) => {
@@ -1005,9 +1021,14 @@
     return lines.join("\n");
   }
 
+  function waNumber(value) {
+    const digits = String(value || "").replace(/\D/g, "");
+    return digits.length === 10 ? `549${digits}` : digits;
+  }
+
   function openWhatsappWithMessage(message) {
     const encoded = encodeURIComponent(message);
-    const phone = (state.catalog.whatsappNumber || "").replace(/\D/g, "");
+    const phone = waNumber(state.catalog.whatsappNumber);
     const url = `https://wa.me/${phone}?text=${encoded}`;
     window.open(url, "_blank", "noopener");
   }
@@ -1300,7 +1321,7 @@
   el.bottomTabLocal.addEventListener("click", () => {
     haptic(6);
     setActiveBottomTab(el.bottomTabLocal);
-    const phone = (state.catalog?.whatsappNumber || "").replace(/\D/g, "");
+    const phone = waNumber(state.catalog?.whatsappNumber);
     if (phone) window.open(`https://wa.me/${phone}`, "_blank");
     setTimeout(syncBottomTab, 700);
   });
@@ -1359,6 +1380,12 @@
     el.catalog.querySelectorAll(".product-thumb").forEach((img) => {
       const ok = () => img.classList.add("loaded");
       const fail = () => {
+        // Si falta la miniatura, se prueba con la foto completa antes de darla por rota.
+        const full = img.dataset.full;
+        if (full && img.getAttribute("src") !== full) {
+          img.src = full;
+          return;
+        }
         img.removeAttribute("src");
         img.classList.add("loaded", "failed");
         img.closest(".thumb-wrap")?.classList.add("is-failed");
@@ -1367,7 +1394,7 @@
         img.naturalWidth ? ok() : fail();
       } else {
         img.addEventListener("load", ok, { once: true });
-        img.addEventListener("error", fail, { once: true });
+        img.addEventListener("error", fail, { once: !img.dataset.full });
       }
     });
     const heroImg = document.querySelector(".hero-image");
@@ -1388,33 +1415,44 @@
     el.categoryTabs.scrollTo({ left: Math.max(0, left), behavior: prefersReducedMotion ? "auto" : "smooth" });
   }
 
+  let lastSpyAt = 0;
+  let lastHeroP = -1;
+
   function updateScrollState() {
+    // Lecturas primero y escrituras después: mezclarlas obliga al navegador a recalcular el
+    // diseño varias veces por cuadro y es lo que hace que el scroll dé tirones.
     const y = window.scrollY;
     const heroH = el.heroBanner ? el.heroBanner.offsetHeight : 400;
-
-    el.miniHeader.classList.toggle("visible", y > heroH - 60);
-
-    if (el.heroBanner && !prefersReducedMotion) {
-      const p = Math.min(1, Math.max(0, y / heroH));
-      el.heroBanner.style.setProperty("--p", p.toFixed(3));
-    }
-
     const stickyTop = el.miniHeader.offsetHeight || 64;
     const slotTop = el.categoryTabsSlot.getBoundingClientRect().top;
-    el.categoryTabs.classList.toggle("stuck", y > 0 && slotTop <= stickyTop);
 
-    if (state.catalog && performance.now() > spyLockUntil) {
+    const now = performance.now();
+    let spyTab;
+    if (state.catalog && now > spyLockUntil && now - lastSpyAt > 120) {
+      lastSpyAt = now;
       const line = stickyTop + el.categoryTabs.offsetHeight + 24;
       let current = null;
       el.catalog.querySelectorAll(".category-section").forEach((sec) => {
         if (sec.getBoundingClientRect().top <= line) current = sec;
       });
       const tabs = el.categoryTabs.querySelectorAll(".category-tab");
-      const tab = current
-        ? Array.from(tabs).find((t) => t.dataset.target === current.id)
-        : tabs[0];
-      setActiveCategoryTab(tab);
+      spyTab = current ? Array.from(tabs).find((t) => t.dataset.target === current.id) : tabs[0];
     }
+
+    el.miniHeader.classList.toggle("visible", y > heroH - 60);
+
+    // El efecto del hero solo importa mientras se ve: pasado el hero no se vuelve a tocar.
+    if (el.heroBanner && !prefersReducedMotion) {
+      const p = Math.min(1, Math.max(0, y / heroH));
+      const rounded = Number(p.toFixed(3));
+      if (rounded !== lastHeroP) {
+        lastHeroP = rounded;
+        el.heroBanner.style.setProperty("--p", rounded.toFixed(3));
+      }
+    }
+
+    el.categoryTabs.classList.toggle("stuck", y > 0 && slotTop <= stickyTop);
+    if (spyTab !== undefined) setActiveCategoryTab(spyTab);
 
     syncBottomTab();
   }
