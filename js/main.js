@@ -334,17 +334,23 @@
   }
 
   function productCardHtml(category, product) {
-    const img = product.image || "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=900&q=80";
     const soldOut = product.available === false;
     const closed = storeIsClosed();
     const buttonLabel = soldOut ? "Agotado" : closed ? "Cerrado" : "Opciones";
     return `
       <article class="product-card reveal${soldOut ? " is-sold-out" : ""}" data-pid="${escapeHtml(product.id)}">
-        <div class="thumb-wrap" role="button" tabindex="0" aria-label="Ampliar foto de ${escapeHtml(product.name)}">
+        ${
+          product.image
+            ? `<div class="thumb-wrap" role="button" tabindex="0" aria-label="Ampliar foto de ${escapeHtml(product.name)}">
           ${soldOut ? '<span class="sold-out-tag">Agotado</span>' : ""}
-          <img class="product-thumb" src="${escapeHtml(img)}" alt="${escapeHtml(product.name)}" loading="lazy" />
+          <img class="product-thumb" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" loading="lazy" />
           <span class="thumb-zoom">${ZOOM_ICON}</span>
-        </div>
+        </div>`
+            : `<div class="thumb-wrap is-failed no-photo" aria-hidden="true">
+          ${soldOut ? '<span class="sold-out-tag">Agotado</span>' : ""}
+          <span class="thumb-placeholder"></span>
+        </div>`
+        }
         <div class="product-info">
           <h4>${escapeHtml(product.name)}</h4>
           <p>${escapeHtml(product.description || "")}</p>

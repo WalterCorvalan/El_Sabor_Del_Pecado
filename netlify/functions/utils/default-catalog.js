@@ -80,7 +80,7 @@ function sandwichExtras() {
 
 function defaultCatalog() {
   return {
-    whatsappNumber: "5491122334455",
+    whatsappNumber: "5493856865979",
     categories: [
       {
         id: "sandwiches",
@@ -244,38 +244,13 @@ function defaultCatalog() {
         id: "bebidas",
         name: "Bebidas",
         products: [
-          product(
-            "coca-cola",
-            "Gaseosas",
-            "Gaseosa bien fría.",
-            "https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=900&q=80",
-            [
-              {
-                id: "variedad",
-                name: "Variedad",
-                multiple: false,
-                required: true,
-                options: ["Coca-Cola", "Coca-Cola Zero", "Sprite", "Sprite Zero", "Fanta"]
-              }
-            ],
-            2000
-          ),
-          product(
-            "cerveza",
-            "Cervezas",
-            "Cerveza bien fría.",
-            "https://images.unsplash.com/photo-1608270586620-248524c67de9?auto=format&fit=crop&w=900&q=80",
-            [
-              {
-                id: "marca",
-                name: "Marca",
-                multiple: false,
-                required: true,
-                options: ["Stella Artois", "Heineken"]
-              }
-            ],
-            3000
-          )
+          product("bebida-coca-cola", "Coca-Cola", "Botella de 1 litro.", "images/menu/bebida-coca-cola.webp", [], 2000),
+          product("bebida-coca-cola-zero", "Coca-Cola Zero", "Botella de 1 litro.", "images/menu/bebida-coca-cola-zero.webp", [], 2000),
+          product("bebida-sprite", "Sprite", "Botella de 1 litro.", "images/menu/bebida-sprite.webp", [], 2000),
+          product("bebida-sprite-zero", "Sprite Zero", "Botella de 1 litro.", "images/menu/bebida-sprite-zero.webp", [], 2000),
+          product("bebida-fanta", "Fanta", "Botella de 1 litro.", "images/menu/bebida-fanta.webp", [], 2000),
+          product("bebida-stella-artois", "Stella Artois", "Cerveza bien fría.", "images/menu/bebida-stella-artois.webp", [], 3000),
+          product("bebida-heineken", "Heineken", "Cerveza bien fría.", "images/menu/bebida-heineken.webp", [], 3000)
         ]
       }
     ]

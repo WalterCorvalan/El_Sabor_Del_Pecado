@@ -430,6 +430,8 @@
 
       ${deliveryCardHtml()}
 
+      ${qrCardHtml()}
+
       <div class="card">
         <h2>WhatsApp del local</h2>
         <p class="hint">Número que recibe los pedidos. Solo dígitos, con código de país y sin el +. Ejemplo: 5491122334455</p>
@@ -1023,6 +1025,23 @@
           <label class="switch"><input type="checkbox" id="scheduleEnabled" ${schedule.enabled ? "checked" : ""} /><span class="slider"></span> <span id="scheduleEnabledLabel">${schedule.enabled ? "Horarios automáticos activados" : "Horarios automáticos desactivados"}</span></label>
         </div>
         <div class="sched${schedule.enabled ? "" : " is-disabled"}" id="scheduleDays">${rows}</div>
+      </div>`;
+  }
+
+  // QR fijo que apunta al sitio. Las imágenes ya están generadas (images/qr-sitio.png y .svg),
+  // así que no cambian nunca. Si algún día cambia el dominio hay que volver a generarlas.
+  const SITE_URL = "https://el-sabor-del-pecado.vercel.app/";
+
+  function qrCardHtml() {
+    return `
+      <div class="card">
+        <h2>Código QR del sitio</h2>
+        <p class="hint">Es fijo: lleva siempre a <strong>${esc(SITE_URL)}</strong>. Descargalo para imprimirlo en carteles, mesas, bolsas o flyers.</p>
+        <div class="qr-box"><img src="images/qr-sitio.png" width="220" height="220" alt="Código QR que abre el sitio de El Sabor del Pecado" /></div>
+        <div class="qr-actions">
+          <a class="btn btn-gold btn-sm" href="images/qr-sitio.png" download="qr-el-sabor-del-pecado.png">Descargar PNG</a>
+          <a class="btn btn-ghost btn-sm" href="images/qr-sitio.svg" download="qr-el-sabor-del-pecado.svg">Descargar SVG</a>
+        </div>
       </div>`;
   }
 

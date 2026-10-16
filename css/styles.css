@@ -2102,10 +2102,19 @@ body.has-cart .toast {
 
 .hero-poster-img {
   display: block;
-  width: 100%;
+  width: 90%;
   height: auto;
+  margin: 0 auto;
   aspect-ratio: 368 / 518;
   object-fit: cover;
+  /* El póster se muestra un poco más chico para que la carne no quede cortada: los bordes
+     se funden con el fondo negro en vez de cortarse en seco. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%),
+    linear-gradient(180deg, #000 0%, #000 88%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%),
+    linear-gradient(180deg, #000 0%, #000 88%, transparent 100%);
+  mask-composite: intersect;
 }
 
 .hero-poster::after {
@@ -2577,4 +2586,23 @@ body.ready .hero-poster-img {
   font-size: 12px;
   text-decoration: underline;
   cursor: pointer;
+}
+
+/* Productos sin foto: se muestra el logo en vez de una imagen cualquiera */
+.thumb-wrap.no-photo {
+  border-radius: 14px;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, #b71c1c 0%, #6e0000 65%, #140706 100%);
+  display: grid;
+  place-items: center;
+}
+
+.thumb-placeholder {
+  display: block;
+  width: 70%;
+  aspect-ratio: 900 / 740;
+  background: linear-gradient(180deg, #ffe27a 0%, #f5b400 55%, #ff8a1f 100%);
+  -webkit-mask: url("../images/logo-mask.png") center / contain no-repeat;
+  mask: url("../images/logo-mask.png") center / contain no-repeat;
+  opacity: 0.92;
 }
