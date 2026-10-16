@@ -87,7 +87,8 @@ exports.handler = async (event) => {
       items: priced.items,
       subtotal: priced.subtotal,
       deliveryFee: priced.deliveryFee,
-      total: priced.total
+      total: priced.total,
+      eta: Rules.prepEstimate(catalog, shipping)
     };
 
     await store.setJSON(id, order);
@@ -100,7 +101,8 @@ exports.handler = async (event) => {
         number,
         subtotal: order.subtotal,
         deliveryFee: order.deliveryFee,
-        total: order.total
+        total: order.total,
+        eta: order.eta
       })
     };
   } catch (err) {

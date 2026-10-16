@@ -45,6 +45,16 @@ function validateDelivery(delivery) {
   return null;
 }
 
+function validatePrepTime(prepTime) {
+  if (prepTime === undefined) return null;
+  if (!prepTime || typeof prepTime !== "object") return "El tiempo estimado es inválido";
+  for (const key of ["pickup", "delivery"]) {
+    const v = prepTime[key];
+    if (typeof v !== "string" || v.length > 20) return "El tiempo estimado es inválido (usá algo como 20-30)";
+  }
+  return null;
+}
+
 function validateCatalog(catalog) {
   if (!catalog || typeof catalog !== "object") return "Catálogo inválido";
   if (!isNonEmptyString(catalog.whatsappNumber)) return "Falta el número de WhatsApp";
@@ -55,7 +65,8 @@ function validateCatalog(catalog) {
   if (catalog.storeOpen !== undefined && typeof catalog.storeOpen !== "boolean") return "El estado del local es inválido";
   if (catalog.closedMessage !== undefined && typeof catalog.closedMessage !== "string") return "El mensaje de local cerrado es inválido";
 
-  const settingsError = validateSchedule(catalog.schedule) || validateDelivery(catalog.delivery);
+  const settingsError =
+    validateSchedule(catalog.schedule) || validateDelivery(catalog.delivery) || validatePrepTime(catalog.prepTime);
   if (settingsError) return settingsError;
 
   for (const category of catalog.categories) {
@@ -63,6 +74,7 @@ function validateCatalog(catalog) {
       return "Cada categoría necesita id y nombre";
     }
     if (!Array.isArray(category.products)) return `La categoría ${category.name} no tiene productos`;
+    if (category.hidden !== undefined && typeof category.hidden !== "boolean") return `La categoría ${category.name} es inválida`;
 
     for (const product of category.products) {
       if (!isNonEmptyString(product.id) || !isNonEmptyString(product.name)) {

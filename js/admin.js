@@ -207,6 +207,7 @@
     el.tabPedidos.classList.toggle("hidden", activeTab !== "pedidos");
     el.tabStats.classList.toggle("hidden", activeTab !== "stats");
     if (activeTab === "pedidos" || activeTab === "stats") loadOrders();
+    if (activeTab === "stats") loadVisits();
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
@@ -238,11 +239,15 @@
       if (filter && !products.length) return;
       const isOpen = filter ? true : openCats.has(cat.id);
       parts.push(`
-        <section class="cat${isOpen ? " open" : ""}" data-cat="${esc(cat.id)}">
+        <section class="cat${isOpen ? " open" : ""}${cat.hidden ? " is-hidden" : ""}" data-cat="${esc(cat.id)}">
           <header class="cat-head">
             <button class="cat-toggle" type="button" data-action="toggle-cat" aria-label="Abrir o cerrar categoría">${icon("chevron")}</button>
             <input class="cat-name" type="text" data-cat-field="name" value="${esc(cat.name)}" aria-label="Nombre de la categoría" />
             <span class="count">${cat.products.length}</span>
+            <label class="switch cat-visible" data-stop title="Mostrar esta categoría en el sitio">
+              <input type="checkbox" data-cat-field="visible" ${cat.hidden ? "" : "checked"} aria-label="Visible en el sitio" />
+              <span class="slider"></span>
+            </label>
             <div class="cat-tools">
               <button class="icon-btn" type="button" data-action="cat-up" ${catIndex === 0 ? "disabled" : ""} aria-label="Subir categoría">${icon("up")}</button>
               <button class="icon-btn" type="button" data-action="cat-down" ${catIndex === catalog.categories.length - 1 ? "disabled" : ""} aria-label="Bajar categoría">${icon("down")}</button>
@@ -425,6 +430,8 @@
           <textarea id="closedMessage" rows="2" placeholder="Por el momento no estamos tomando pedidos. ¡Volvemos pronto!">${esc(catalog.closedMessage || "")}</textarea>
         </div>
       </div>
+
+      ${prepCardHtml()}
 
       ${scheduleCardHtml()}
 
@@ -1282,6 +1289,9 @@
       `<button class="btn btn-ghost btn-sm" type="button" data-oaction="print">Imprimir ticket</button>`,
       isActiveStatus(order.status)
         ? `<button class="btn btn-danger btn-sm" type="button" data-oaction="status" data-status="cancelado">Cancelar</button>`
+        : "",
+      order.status === "cancelado"
+        ? `<button class="btn btn-danger btn-sm" type="button" data-oaction="delete">Eliminar</button>`
         : ""
     ].join("");
 
@@ -1355,6 +1365,37 @@
       return;
     }
 
+    if (action === "delete") {
+      if (!confirm(`¿Eliminar el pedido #${order.number} para siempre? No se puede deshacer.`)) return;
+      btn.disabled = true;
+      try {
+        const res = await fetch("/api/order-update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ id: order.id, action: "delete" })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+          logout("Tu sesión expiró, ingresá de nuevo");
+          return;
+        }
+        if (!res.ok) {
+          toast(data.error || "No se pudo eliminar el pedido", "error");
+          btn.disabled = false;
+          return;
+        }
+        orders = orders.filter((o) => o.id !== order.id);
+        if (knownOrderIds) knownOrderIds.delete(order.id);
+        renderOrders();
+        toast("Pedido eliminado", "ok");
+      } catch (err) {
+        console.error(err);
+        toast("Error de conexión", "error");
+        btn.disabled = false;
+      }
+      return;
+    }
+
     if (action === "status") {
       const status = btn.dataset.status;
       if (status === "cancelado" && !confirm(`¿Cancelar el pedido #${order.number}?`)) return;
@@ -1383,6 +1424,154 @@
         btn.disabled = false;
       }
     }
+  });
+
+  // ---------------- Tiempo estimado (ajustes) ----------------
+  function prepCardHtml() {
+    const prep = catalog.prepTime || { pickup: "20-30", delivery: "40-50" };
+    return `
+      <div class="card">
+        <h2>Tiempo estimado</h2>
+        <p class="hint">Se muestra al cliente al elegir cómo recibir el pedido, en el mensaje de WhatsApp y en la página de seguimiento. Ponelo en minutos, por ejemplo 20-30. Cuando el local está cargado de pedidos, subilo desde acá.</p>
+        <div class="grid-2">
+          <div class="field">
+            <label for="prepPickup">Retiro en local (min)</label>
+            <input type="text" id="prepPickup" maxlength="20" value="${esc(prep.pickup)}" />
+          </div>
+          <div class="field">
+            <label for="prepDelivery">Envío a domicilio (min)</label>
+            <input type="text" id="prepDelivery" maxlength="20" value="${esc(prep.delivery)}" />
+          </div>
+        </div>
+      </div>`;
+  }
+
+  el.tabAjustes.addEventListener("input", (e) => {
+    if (e.target.id !== "prepPickup" && e.target.id !== "prepDelivery") return;
+    const prep = catalog.prepTime || { pickup: "20-30", delivery: "40-50" };
+    prep[e.target.id === "prepPickup" ? "pickup" : "delivery"] = e.target.value.trim();
+    catalog.prepTime = prep;
+    markDirty();
+  });
+
+  // ---------------- Categorías visibles u ocultas (promos, etc.) ----------------
+  el.tabMenu.addEventListener("change", (e) => {
+    const target = e.target;
+    if (!target.matches("[data-cat-field='visible']")) return;
+    const catEl = target.closest("[data-cat]");
+    const cat = catEl && findCategory(catEl.dataset.cat);
+    if (!cat) return;
+    cat.hidden = !target.checked;
+    catEl.classList.toggle("is-hidden", cat.hidden);
+    markDirty();
+  });
+
+  // ---------------- Visitas ----------------
+  let visitsData = null;
+  let visitsLoadedAt = 0;
+
+  async function loadVisits() {
+    if (!token || Date.now() - visitsLoadedAt < 60000) return;
+    visitsLoadedAt = Date.now();
+    try {
+      const res = await fetch("/api/track?stats=90", { cache: "no-store", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("track " + res.status);
+      visitsData = await res.json();
+      renderStats();
+    } catch (err) {
+      console.error(err);
+      visitsLoadedAt = 0;
+    }
+  }
+
+  function localDay(date) {
+    const p = (n) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
+  }
+
+  function visitsCardHtml(periodOrders) {
+    if (!visitsData) return '<div class="card"><h2>Visitas</h2><p class="hint">Cargando...</p></div>';
+    if (!visitsData.configured) {
+      return `
+        <div class="card">
+          <h2>Visitas al sitio</h2>
+          <p class="hint">Todavía no se cuentan. Para activarlo: en Vercel, andá a <strong>Storage</strong>, creá una base <strong>Upstash Redis</strong> (plan gratis), conectala a este proyecto y hacé un <strong>Redeploy</strong>. No hace falta tocar nada más.</p>
+        </div>`;
+    }
+
+    const days = visitsData.days; // del más nuevo al más viejo
+    const sum = (n, key) => days.slice(0, n).reduce((total, d) => total + d[key], 0);
+    const periodDays = statsPeriod === "hoy" ? 1 : statsPeriod === "todo" ? 90 : Number(statsPeriod);
+    const visits = sum(periodDays, "visits");
+    const uniques = sum(periodDays, "uniques");
+    const conversion = uniques > 0 ? Math.min(100, Math.round((periodOrders / uniques) * 100)) : 0;
+
+    return `
+      <div class="card">
+        <h2>Visitas al sitio</h2>
+        <div class="kpis kpis-inner">
+          <div class="kpi"><span class="kpi-num">${visits}</span><span class="kpi-label">Visitas</span></div>
+          <div class="kpi"><span class="kpi-num">${uniques}</span><span class="kpi-label">Personas</span></div>
+          <div class="kpi"><span class="kpi-num">${conversion}%</span><span class="kpi-label">Compran</span></div>
+        </div>
+        <p class="hint">Según el período elegido arriba. "Compran" es la relación entre pedidos y personas distintas que entraron (aproximada). Las personas se cuentan por celular o navegador, sin datos personales.</p>
+      </div>`;
+  }
+
+  // ---------------- Cierre del día ----------------
+  let closingDate = localDay(new Date());
+
+  function closingHtml() {
+    const day = orders.filter((o) => localDay(new Date(o.createdAt)) === closingDate);
+    const valid = day.filter((o) => o.status !== "cancelado");
+    const cancelled = day.length - valid.length;
+    const total = valid.reduce((sum, o) => sum + (o.total || 0), 0);
+    const fees = valid.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
+    const deliveries = valid.filter((o) => o.shipping === "Envío a domicilio").length;
+
+    const byPayment = new Map();
+    const products = new Map();
+    for (const o of valid) {
+      const entry = byPayment.get(o.payment) || { count: 0, total: 0 };
+      entry.count += 1;
+      entry.total += o.total || 0;
+      byPayment.set(o.payment, entry);
+      for (const item of o.items || []) products.set(item.name, (products.get(item.name) || 0) + item.qty);
+    }
+    const top = [...products.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+    const paymentRows = [...byPayment.entries()]
+      .map(([name, v]) => `<div class="close-row"><span>${esc(name)} (${v.count})</span><strong>${money(v.total)}</strong></div>`)
+      .join("");
+
+    return `
+      <div class="card close-card">
+        <h2>Cierre del día</h2>
+        <div class="field">
+          <label for="closingDate">Día</label>
+          <input type="date" id="closingDate" value="${esc(closingDate)}" max="${esc(localDay(new Date()))}" />
+        </div>
+        ${
+          valid.length
+            ? `
+        <div class="close-total"><span>Ventas del día</span><strong>${money(total)}</strong></div>
+        <div class="close-row"><span>Pedidos</span><strong>${valid.length}</strong></div>
+        <div class="close-row"><span>Retiro / Envío</span><strong>${valid.length - deliveries} / ${deliveries}</strong></div>
+        <div class="close-row"><span>Envíos cobrados</span><strong>${money(fees)}</strong></div>
+        ${cancelled ? `<div class="close-row"><span>Cancelados (no suman)</span><strong>${cancelled}</strong></div>` : ""}
+        <h3 class="close-sub">Por medio de pago</h3>
+        ${paymentRows}
+        <h3 class="close-sub">Lo más pedido</h3>
+        ${top.map(([name, qty]) => `<div class="close-row"><span>${esc(name)}</span><strong>${qty}</strong></div>`).join("")}`
+            : '<p class="hint">No hay pedidos ese día.</p>'
+        }
+      </div>`;
+  }
+
+  el.tabStats.addEventListener("change", (e) => {
+    if (e.target.id !== "closingDate" || !e.target.value) return;
+    closingDate = e.target.value;
+    renderStats();
   });
 
   // ---------------- Estadísticas ----------------
@@ -1445,6 +1634,8 @@
     ).join("");
 
     el.tabStats.innerHTML = `
+      ${closingHtml()}
+
       <div class="orders-bar"><div class="chips">${chips}</div></div>
 
       <div class="kpis">
@@ -1452,6 +1643,8 @@
         <div class="kpi"><span class="kpi-num">${money(revenue)}</span><span class="kpi-label">Ventas</span></div>
         <div class="kpi"><span class="kpi-num">${money(average)}</span><span class="kpi-label">Ticket promedio</span></div>
       </div>
+
+      ${visitsCardHtml(list.length)}
 
       ${
         list.length

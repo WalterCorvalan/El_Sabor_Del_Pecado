@@ -107,6 +107,17 @@
     return { enabled: true, fee: free ? 0 : fee, free, zone, needsZone: false };
   }
 
+  // ---------------- Tiempo estimado ----------------
+  // catalog.prepTime = { pickup: "20-30", delivery: "40-50" } (minutos, texto libre corto)
+  const DEFAULT_PREP = { pickup: "20-30", delivery: "40-50" };
+
+  function prepEstimate(catalog, shipping) {
+    const p = (catalog && catalog.prepTime) || {};
+    const key = shipping === DELIVERY ? "delivery" : "pickup";
+    const value = typeof p[key] === "string" && p[key].trim() ? p[key].trim() : DEFAULT_PREP[key];
+    return value;
+  }
+
   // ---------------- Precios ----------------
   function cleanText(value, max) {
     return String(value == null ? "" : value).replace(/\s+/g, " ").trim().slice(0, max);
@@ -122,8 +133,12 @@
     }
 
     const products = new Map();
+    const hiddenIds = new Set();
     for (const category of catalog.categories || []) {
-      for (const product of category.products || []) products.set(product.id, product);
+      for (const product of category.products || []) {
+        products.set(product.id, product);
+        if (category.hidden) hiddenIds.add(product.id);
+      }
     }
 
     const items = [];
@@ -133,6 +148,8 @@
       const product = products.get(line && line.productId);
       if (!product) return { ok: false, error: "Hay un producto que ya no está en el menú" };
       if (product.available === false) return { ok: false, error: `${product.name} está agotado` };
+      // Las categorías ocultas (por ejemplo, promos todavía no activadas) no se pueden pedir.
+      if (hiddenIds.has(product.id)) return { ok: false, error: `${product.name} no está disponible por ahora` };
 
       const qty = Number(line.qty);
       if (!Number.isInteger(qty) || qty < 1 || qty > MAX_QTY) {
@@ -187,6 +204,7 @@
     storeStatus,
     deliveryConfig,
     deliveryFee,
+    prepEstimate,
     priceOrder
   };
 });

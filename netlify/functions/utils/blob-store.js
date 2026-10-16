@@ -85,12 +85,12 @@ function getImageStore() {
 
 // Almacenamiento de pedidos. Una entrada por pedido (clave: "<timestamp>-<aleatorio>") más
 // un contador. Interfaz común a las dos plataformas:
-//   get(key) -> objeto | null, setJSON(key, valor), listRecent(limite) -> [pedidos, nuevos primero]
+//   get(key) -> objeto | null, setJSON(key, valor), delete(key), listRecent(limite) -> [pedidos, nuevos primero]
 // Las claves de pedidos llevan un sufijo aleatorio largo: en Vercel Blob las URLs son
 // públicas, así que eso es lo que impide adivinar la dirección de un pedido.
 function getOrderStore() {
   if (process.env.VERCEL) {
-    const { put, list } = require("@vercel/blob");
+    const { put, list, del } = require("@vercel/blob");
     const path = (key) => `orders/${key}.json`;
 
     return {
@@ -109,6 +109,11 @@ function getOrderStore() {
           addRandomSuffix: false,
           allowOverwrite: true
         });
+      },
+      async delete(key) {
+        const { blobs } = await list({ prefix: path(key), limit: 1 });
+        const blob = blobs.find((b) => b.pathname === path(key));
+        if (blob) await del(blob.url);
       },
       // Los pedidos más nuevos primero. Se lee cada pedido directo por su URL (no gasta
       // una consulta de Blob por pedido).
@@ -141,6 +146,7 @@ function getOrderStore() {
   return {
     get: (key) => store.get(key, { type: "json" }),
     setJSON: (key, value) => store.setJSON(key, value),
+    delete: (key) => store.delete(key),
     async listRecent(limit) {
       const { blobs } = await store.list();
       const keys = blobs

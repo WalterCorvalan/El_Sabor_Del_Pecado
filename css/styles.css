@@ -2606,3 +2606,36 @@ body.ready .hero-poster-img {
   mask: url("../images/logo-mask.png") center / contain no-repeat;
   opacity: 0.92;
 }
+
+/* ---------- Barra de seguimiento del último pedido ---------- */
+.track-bar {
+  display: flex;
+  align-items: stretch;
+  margin: 10px 14px 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(90deg, #1f9d55, #2ebd6b);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(31, 157, 85, 0.3);
+}
+
+.track-link {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  color: inherit;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.track-close {
+  width: 44px;
+  background: rgba(0, 0, 0, 0.14);
+  border: none;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+}

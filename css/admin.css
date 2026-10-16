@@ -757,3 +757,38 @@ a.btn { text-decoration: none; }
 .qr-box { display: grid; place-items: center; margin: 12px 0; }
 .qr-box img { width: 220px; height: 220px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; }
 .qr-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+/* ---------- Categorías ocultas, cierre del día y visitas ---------- */
+.cat-visible { margin: 0 6px; flex: none; }
+.cat.is-hidden .cat-name { opacity: 0.55; }
+.cat.is-hidden .cat-head::after {
+  content: "Oculta";
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  background: #f1e6d6;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.close-card input[type="date"] {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  font-size: 16px;
+  font-family: inherit;
+  background: #fff;
+}
+.close-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 14px 0 6px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--rojo);
+}
+.close-row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px dashed var(--line); font-size: 14px; }
+.close-sub { margin: 14px 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); }
+.kpis-inner { margin: 10px 0; }

@@ -17,11 +17,11 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: "JSON inválido" }) };
   }
 
-  const { id, status } = payload;
+  const { id, status, action } = payload;
   if (typeof id !== "string" || !/^\d+-[a-f0-9]{16}$/.test(id)) {
     return { statusCode: 400, body: JSON.stringify({ error: "Pedido inválido" }) };
   }
-  if (!STATUSES.includes(status)) {
+  if (action !== "delete" && !STATUSES.includes(status)) {
     return { statusCode: 400, body: JSON.stringify({ error: "Estado inválido" }) };
   }
 
@@ -29,6 +29,19 @@ exports.handler = async (event) => {
     const store = getOrderStore();
     const order = await store.get(id);
     if (!order) return { statusCode: 404, body: JSON.stringify({ error: "No se encontró el pedido" }) };
+
+    // Borrar es definitivo: solo se pueden borrar pedidos ya cancelados.
+    if (action === "delete") {
+      if (order.status !== "cancelado") {
+        return { statusCode: 400, body: JSON.stringify({ error: "Solo se pueden eliminar pedidos cancelados" }) };
+      }
+      await store.delete(id);
+      return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ok: true, deleted: id })
+      };
+    }
 
     order.status = status;
     await store.setJSON(id, order);

@@ -74,6 +74,11 @@ y el catálogo se guarda en Vercel Blob (ver `netlify/functions/utils/blob-store
 - Cada pedido se guarda (Vercel Blob o Netlify Blobs) y se ve en `/admin.html`, pestaña **Pedidos**, con botón para imprimir el ticket de 80 mm. La pestaña **Estadísticas** resume ventas, lo más pedido y los horarios de más pedidos.
 - En **Ajustes** se activan, de forma opcional, los horarios automáticos y el costo de envío (general o por zona).
 - Las reglas de horarios, envío y precios están en `js/rules.js` y las usan la tienda y el servidor.
+- **Seguimiento:** cada pedido tiene un link (`seguimiento.html?o=...`) que se manda en el mensaje de WhatsApp y que el cliente ve en una barra en el sitio. Muestra Recibido, Preparando, Listo y Entregado, y se actualiza solo.
+- **Tiempo estimado:** se configura en Admin → Ajustes.
+- **Promos:** hay una categoría "Promos" oculta con un combo de ejemplo. Se activa con el interruptor de la categoría en Admin → Menú (y hay que cargarle el precio). Una categoría oculta no se puede pedir.
+- **Visitas:** se cuentan en Upstash Redis. Para activarlo: Vercel → Storage → crear Upstash Redis → conectar al proyecto → Redeploy. Sin Redis las visitas no se cuentan y el resto anda igual.
+- **Límite de Vercel gratis:** 12 funciones en total y hoy hay 12 en `api/`. Para sumar otra hay que unir funciones existentes.
 - Si el almacenamiento (Blob) falla, el sitio muestra el menú inicial del código y los pedidos en efectivo o transferencia siguen yendo por WhatsApp, pero sin guardarse. Mercado Pago necesita el pedido guardado.
 - La vista previa al compartir el link (WhatsApp, Instagram) sale de `api/share.js` y `images/og-share.jpg` (solo en Vercel).
 

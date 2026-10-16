@@ -65,6 +65,11 @@
     deliveryZoneField: document.getElementById("deliveryZoneField"),
     deliveryZone: document.getElementById("deliveryZone"),
     deliveryHint: document.getElementById("deliveryHint"),
+    pickupHint: document.getElementById("pickupHint"),
+    trackBar: document.getElementById("trackBar"),
+    trackLink: document.getElementById("trackLink"),
+    trackText: document.getElementById("trackText"),
+    trackClose: document.getElementById("trackClose"),
     checkoutFeeRow: document.getElementById("checkoutFeeRow"),
     checkoutFee: document.getElementById("checkoutFee"),
     resumenFeeRow: document.getElementById("resumenFeeRow"),
@@ -172,11 +177,14 @@
       const res = await fetch("/api/catalog-get");
       if (!res.ok) throw new Error("No se pudo cargar el catálogo");
       state.catalog = await res.json();
+      state.catalog.categories = state.catalog.categories.filter((cat) => !cat.hidden);
       renderCategoryTabs();
       renderCatalog();
       setupDelivery();
       applySavedCustomer();
       startStatusWatcher();
+      countVisit();
+      renderTrackBar();
     } catch (err) {
       console.error(err);
       el.loadingState.textContent = "No pudimos cargar el menú. Probá recargar la página.";
@@ -803,6 +811,9 @@
   // ---------------- Envío y totales ----------------
   function setupDelivery() {
     const cfg = Rules.deliveryConfig(state.catalog);
+    const pickupEta = Rules.prepEstimate(state.catalog, "Retiro en local");
+    const deliveryEta = Rules.prepEstimate(state.catalog, Rules.DELIVERY);
+    el.pickupHint.textContent = `Listo en ${pickupEta} min`;
 
     if (!cfg.enabled) {
       el.deliveryHint.textContent = "Consultar zona y costo";
@@ -816,6 +827,7 @@
     if (cfg.enabled && cfg.freeFrom > 0) {
       el.deliveryHint.textContent += ` · Gratis desde ${money(cfg.freeFrom)}`;
     }
+    el.deliveryHint.textContent += ` · Llega en ${deliveryEta} min`;
 
     el.deliveryZone.innerHTML =
       '<option value="">Elegí tu zona</option>' +
@@ -860,6 +872,58 @@
     el.checkoutTotal.textContent = money(t.total);
     el.resumenTotal.textContent = money(t.total);
   }
+
+  // ---------------- Visitas y seguimiento del pedido ----------------
+  const VISITOR_KEY = "esdp_visitor";
+  const VISIT_SENT_KEY = "esdp_visit_sent";
+  const LAST_ORDER_KEY = "esdp_last_order";
+  const LAST_ORDER_HOURS = 8;
+
+  // Cuenta una visita por sesión. El id es aleatorio y no identifica a nadie: solo sirve
+  // para distinguir visitantes distintos en las estadísticas.
+  function countVisit() {
+    try {
+      if (sessionStorage.getItem(VISIT_SENT_KEY)) return;
+      sessionStorage.setItem(VISIT_SENT_KEY, "1");
+      let vid = localStorage.getItem(VISITOR_KEY);
+      if (!vid) {
+        vid = Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 20);
+        localStorage.setItem(VISITOR_KEY, vid);
+      }
+      fetch("/api/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "visit", vid }),
+        keepalive: true
+      }).catch(() => {});
+    } catch (_) {}
+  }
+
+  function rememberLastOrder(saved) {
+    try {
+      localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ id: saved.orderId, number: saved.number, at: Date.now() }));
+    } catch (_) {}
+    renderTrackBar();
+  }
+
+  function renderTrackBar() {
+    let last = null;
+    try {
+      last = JSON.parse(localStorage.getItem(LAST_ORDER_KEY));
+    } catch (_) {}
+    const fresh = last && last.id && Date.now() - last.at < LAST_ORDER_HOURS * 60 * 60 * 1000;
+    el.trackBar.classList.toggle("hidden", !fresh);
+    if (!fresh) return;
+    el.trackLink.href = `seguimiento.html?o=${encodeURIComponent(last.id)}`;
+    el.trackText.textContent = `Seguí tu pedido #${last.number}`;
+  }
+
+  el.trackClose.addEventListener("click", () => {
+    try {
+      localStorage.removeItem(LAST_ORDER_KEY);
+    } catch (_) {}
+    renderTrackBar();
+  });
 
   // ---------------- Datos del cliente guardados en el celular ----------------
   const CUSTOMER_KEY = "esdp_customer_v1";
@@ -911,7 +975,7 @@
   });
 
   function buildOrderMessage(cart, total, contact, payment, extraNote) {
-    const { name, phone, email, shipping, address, number, deliveryFee, zoneName } = contact;
+    const { name, phone, email, shipping, address, number, deliveryFee, zoneName, orderId, eta } = contact;
     const lines = [];
     lines.push(number ? `¡Hola! Quiero hacer un pedido 🔥 (*Pedido #${number}*)` : "¡Hola! Quiero hacer un pedido 🔥");
     lines.push("");
@@ -932,6 +996,8 @@
     lines.push(`*Entrega:* ${shipping}`);
     if (shipping === Rules.DELIVERY) lines.push(`*Dirección:* ${address}`);
     lines.push(`*Medio de pago:* ${payment}`);
+    if (eta) lines.push(`*Tiempo estimado:* ${eta} min`);
+    if (orderId) lines.push(`*Seguí tu pedido:* ${window.location.origin}/seguimiento.html?o=${orderId}`);
     if (extraNote) {
       lines.push("");
       lines.push(extraNote);
@@ -1080,6 +1146,9 @@
     const saved = result.saved || null;
     // Con el pedido guardado se usan los montos del servidor.
     contact.number = saved ? saved.number : undefined;
+    contact.orderId = saved ? saved.orderId : undefined;
+    contact.eta = saved ? saved.eta : undefined;
+    if (saved) rememberLastOrder(saved);
     contact.deliveryFee = saved ? saved.deliveryFee : totals.fee;
     contact.zoneName = totals.zone ? totals.zone.name : "";
     const total = saved ? saved.total : totals.total;

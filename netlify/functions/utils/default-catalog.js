@@ -81,6 +81,7 @@ function sandwichExtras() {
 function defaultCatalog() {
   return {
     whatsappNumber: "5493856865979",
+    prepTime: { pickup: "20-30", delivery: "40-50" },
     categories: [
       {
         id: "sandwiches",
@@ -251,6 +252,43 @@ function defaultCatalog() {
           product("bebida-fanta", "Fanta", "Botella de 1 litro.", "images/menu/bebida-fanta.webp", [], 2000),
           product("bebida-stella-artois", "Stella Artois", "Cerveza bien fría.", "images/menu/bebida-stella-artois.webp", [], 3000),
           product("bebida-heineken", "Heineken", "Cerveza bien fría.", "images/menu/bebida-heineken.webp", [], 3000)
+        ]
+      },
+      {
+        id: "promos",
+        name: "Promos",
+        hidden: true,
+        products: [
+          product(
+            "promo-combo-sandwich-dip-bebida",
+            "Combo Sándwich + Dip + Bebida",
+            "Un sándwich a elección, un dip y una bebida. (Ejemplo: editá el precio y activá la categoría Promos desde el admin.)",
+            "",
+            [
+              {
+                id: "sandwich",
+                name: "Sándwich",
+                multiple: false,
+                required: true,
+                options: ["Vacío especial de autor", "Pollo al Funghi", "Bondiola a la Barbacoa", "Osobuco al Malbec", "Bondiola Honey Mustard"]
+              },
+              {
+                id: "dip",
+                name: "Dip",
+                multiple: false,
+                required: true,
+                options: ["Glase de miel y mostaza", "Barbacoa", "Mayo aliñada al Tabasco", "Honey Mustard", "Alioli con ciboulette"]
+              },
+              {
+                id: "bebida",
+                name: "Bebida",
+                multiple: false,
+                required: true,
+                options: ["Coca-Cola", "Coca-Cola Zero", "Sprite", "Sprite Zero", "Fanta", "Stella Artois", "Heineken"]
+              }
+            ],
+            0
+          )
         ]
       }
     ]

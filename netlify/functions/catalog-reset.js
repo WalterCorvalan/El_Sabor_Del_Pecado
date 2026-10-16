@@ -33,6 +33,7 @@ exports.handler = async (event) => {
       if (typeof current.closedMessage === "string") fresh.closedMessage = current.closedMessage;
       if (current.schedule) fresh.schedule = current.schedule;
       if (current.delivery) fresh.delivery = current.delivery;
+      if (current.prepTime) fresh.prepTime = current.prepTime;
     }
 
     await store.setJSON("catalog", fresh);
