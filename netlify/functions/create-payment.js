@@ -1,14 +1,9 @@
-const { getCatalogStore } = require("./utils/blob-store");
-const { defaultCatalog } = require("./utils/default-catalog");
+const { getOrderStore } = require("./utils/blob-store");
 
-const MAX_BODY_BYTES = 50 * 1024;
-const MAX_QTY = 50;
-const MAX_ITEMS = 50;
+const MAX_BODY_BYTES = 5 * 1024;
 
-function isNonEmptyString(v) {
-  return typeof v === "string" && v.trim().length > 0;
-}
-
+// Crea la preferencia de Mercado Pago a partir de un pedido ya guardado (order-create),
+// así los montos son siempre los que calculó el servidor y nunca los del navegador.
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -33,83 +28,37 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: "JSON inválido" }) };
   }
 
-  const { items, address, phone } = payload;
-
-  if (!isNonEmptyString(address)) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Falta la dirección de entrega" }) };
-  }
-  if (!isNonEmptyString(phone)) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Falta el teléfono de contacto" }) };
-  }
-  if (!Array.isArray(items) || items.length === 0 || items.length > MAX_ITEMS) {
-    return { statusCode: 400, body: JSON.stringify({ error: "El carrito está vacío o es inválido" }) };
+  const { orderId } = payload;
+  if (typeof orderId !== "string" || !/^\d+-[a-f0-9]{16}$/.test(orderId)) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Pedido inválido" }) };
   }
 
-  let catalog;
+  let order;
   try {
-    const store = getCatalogStore();
-    catalog = (await store.get("catalog", { type: "json" })) || defaultCatalog();
+    order = await getOrderStore().get(orderId);
   } catch (err) {
-    console.error("Error leyendo el catálogo para el pago:", err);
+    console.error("Error leyendo el pedido para el pago:", err);
     return { statusCode: 500, body: JSON.stringify({ error: "No se pudo preparar el pago" }) };
   }
-
-  if (catalog.storeOpen === false) {
-    return { statusCode: 400, body: JSON.stringify({ error: "El local está cerrado por ahora" }) };
+  if (!order) {
+    return { statusCode: 404, body: JSON.stringify({ error: "No se encontró el pedido" }) };
+  }
+  if (order.payment !== "Mercado Pago") {
+    return { statusCode: 400, body: JSON.stringify({ error: "Este pedido no es para pagar con Mercado Pago" }) };
   }
 
-  const productIndex = new Map();
-  for (const category of catalog.categories || []) {
-    for (const product of category.products || []) {
-      productIndex.set(product.id, product);
-    }
-  }
+  const mpItems = order.items.map((item) => ({
+    title: item.details && item.details.length ? `${item.name} (${item.details.join(" · ")})` : item.name,
+    quantity: item.qty,
+    unit_price: Number(item.price),
+    currency_id: "ARS"
+  }));
 
-  // Los precios se recalculan acá con el catálogo real (nunca se confía en el precio
-  // que mande el cliente), para que nadie pueda manipular el total desde el navegador.
-  const mpItems = [];
-  for (const line of items) {
-    const product = productIndex.get(line.productId);
-    if (!product) {
-      return { statusCode: 400, body: JSON.stringify({ error: `Producto no encontrado: ${line.productId}` }) };
-    }
-
-    if (product.available === false) {
-      return { statusCode: 400, body: JSON.stringify({ error: `${product.name} está agotado` }) };
-    }
-
-    const qty = Number(line.qty);
-    if (!Number.isInteger(qty) || qty < 1 || qty > MAX_QTY) {
-      return { statusCode: 400, body: JSON.stringify({ error: `Cantidad inválida para ${product.name}` }) };
-    }
-
-    const selectionsText = Array.isArray(line.selections)
-      ? line.selections
-          .map((s) => `${s.groupName}: ${Array.isArray(s.values) ? s.values.join(", ") : ""}`)
-          .join(" · ")
-      : "";
-
-    const extrasIndex = new Map((product.extras || []).map((e) => [e.id, e]));
-    const extraIds = Array.isArray(line.extraIds) ? line.extraIds : [];
-    let extrasTotal = 0;
-    const extraNames = [];
-    for (const extraId of extraIds) {
-      const extra = extrasIndex.get(extraId);
-      if (!extra) {
-        return { statusCode: 400, body: JSON.stringify({ error: `Extra no encontrado para ${product.name}` }) };
-      }
-      extrasTotal += Number(extra.price);
-      extraNames.push(extra.name);
-    }
-
-    const detailsText = [selectionsText, extraNames.length ? `Extras: ${extraNames.join(", ")}` : ""]
-      .filter(Boolean)
-      .join(" · ");
-
+  if (order.deliveryFee > 0) {
     mpItems.push({
-      title: detailsText ? `${product.name} (${detailsText})` : product.name,
-      quantity: qty,
-      unit_price: Number(product.price) + extrasTotal,
+      title: order.zone ? `Envío (${order.zone.name})` : "Envío a domicilio",
+      quantity: 1,
+      unit_price: Number(order.deliveryFee),
       currency_id: "ARS"
     });
   }
@@ -120,6 +69,7 @@ exports.handler = async (event) => {
 
   const preference = {
     items: mpItems,
+    external_reference: order.id,
     back_urls: {
       success: `${origin}/?payment=success`,
       failure: `${origin}/?payment=failure`,

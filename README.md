@@ -69,6 +69,14 @@ y el catálogo se guarda en Vercel Blob (ver `netlify/functions/utils/blob-store
 3. En *Settings → Environment Variables* agregar `ADMIN_PASSWORD` y `MERCADOPAGO_ACCESS_TOKEN`.
 4. Deploy. Entrar a `/admin.html` para cargar el catálogo (si está vacío arranca con el menú por defecto).
 
+### Pedidos, horarios y envío
+
+- Cada pedido se guarda (Vercel Blob o Netlify Blobs) y se ve en `/admin.html`, pestaña **Pedidos**, con botón para imprimir el ticket de 80 mm. La pestaña **Estadísticas** resume ventas, lo más pedido y los horarios de más pedidos.
+- En **Ajustes** se activan, de forma opcional, los horarios automáticos y el costo de envío (general o por zona).
+- Las reglas de horarios, envío y precios están en `js/rules.js` y las usan la tienda y el servidor.
+- Si el almacenamiento (Blob) falla, el sitio muestra el menú inicial del código y los pedidos en efectivo o transferencia siguen yendo por WhatsApp, pero sin guardarse. Mercado Pago necesita el pedido guardado.
+- La vista previa al compartir el link (WhatsApp, Instagram) sale de `api/share.js` y `images/og-share.jpg` (solo en Vercel).
+
 ## Desarrollo local
 
 ```bash

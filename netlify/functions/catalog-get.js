@@ -20,10 +20,17 @@ exports.handler = async () => {
       body: JSON.stringify(catalog)
     };
   } catch (err) {
-    console.error("Error leyendo el catálogo:", err);
+    // Sin almacenamiento (por ejemplo, un error de Blob) el sitio no puede quedar vacío:
+    // se muestra el menú inicial del código. Los cambios hechos en el admin no se ven hasta
+    // que el almacenamiento vuelva a andar.
+    console.error("Error leyendo el catálogo, se usa el menú inicial:", err);
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "No se pudo cargar el catálogo" })
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store"
+      },
+      body: JSON.stringify(defaultCatalog())
     };
   }
 };

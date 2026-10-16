@@ -1,11 +1,21 @@
 {
-  "framework": null,
-  "buildCommand": null,
-  "outputDirectory": ".",
   "headers": [
     {
       "source": "/admin.html",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(whatsapp|facebookexternalhit|facebot|twitterbot|telegrambot|slackbot|linkedinbot|discordbot|skypeuripreview).*"
+        }
+      ],
+      "destination": "/api/share"
     }
   ]
 }

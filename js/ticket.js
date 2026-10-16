@@ -24,8 +24,8 @@
     return `${pad(d.getDate(), 2)}/${pad(d.getMonth() + 1, 2)}/${d.getFullYear()} ${pad(d.getHours(), 2)}:${pad(d.getMinutes(), 2)}`;
   }
 
-  // order: { number, createdAt, customer:{name, phone}, shipping, address, payment,
-  //          items:[{qty, name, price, details:[string], notes}], total }
+  // order: { number, createdAt, customer:{name, phone}, shipping, zone, address, payment,
+  //          items:[{qty, name, price, details:[string], notes}], subtotal, deliveryFee, total }
   function renderTicketHtml(order) {
     const isDelivery = order.shipping === "Envío a domicilio";
     const items = (order.items || [])
@@ -42,6 +42,13 @@
           </div>`;
       })
       .join("");
+
+    const hasFeeLine = isDelivery && order.deliveryFee !== undefined;
+    const feeLines = hasFeeLine
+      ? `
+        <div class="t-row"><span>Subtotal</span><span>${money(order.subtotal ?? order.total - order.deliveryFee)}</span></div>
+        <div class="t-row"><span>Envío${order.zone ? " (" + esc(order.zone.name) + ")" : ""}</span><span>${order.deliveryFee > 0 ? money(order.deliveryFee) : "Gratis"}</span></div>`
+      : "";
 
     return `
       <div class="ticket">
@@ -65,7 +72,7 @@
 
         ${items}
 
-        <div class="t-sep"></div>
+        <div class="t-sep"></div>${feeLines}
         <div class="t-row t-total">
           <span>TOTAL</span>
           <span>${money(order.total)}</span>

@@ -62,3 +62,23 @@ function getBearerToken(event) {
 }
 
 module.exports = { createToken, verifyToken, verifyPassword, getBearerToken };
+
+// Devuelve null si el pedido trae un token de admin válido; si no, la respuesta de error.
+function requireAdmin(event) {
+  let tokenOk;
+  try {
+    tokenOk = verifyToken(getBearerToken(event));
+  } catch (err) {
+    console.error("ADMIN_PASSWORD no configurada:", err.message);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "El servidor no tiene configurada la contraseña de administrador" })
+    };
+  }
+  if (!tokenOk) {
+    return { statusCode: 401, body: JSON.stringify({ error: "No autorizado, iniciá sesión de nuevo" }) };
+  }
+  return null;
+}
+
+module.exports.requireAdmin = requireAdmin;

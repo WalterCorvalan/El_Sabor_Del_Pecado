@@ -10,8 +10,13 @@
   <meta name="apple-mobile-web-app-title" content="El Sabor" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="images/icons/apple-touch-icon.png" />
-  <title>El Sabor del Pecado | Comida Casera</title>
-  <meta name="description" content="Pedí online hamburguesas, platos y empanadas caseras de El Sabor del Pecado." />
+  <title>El Sabor del Pecado | Sandwichería Gourmet</title>
+  <meta name="description" content="Sándwiches, platos y empanadas gourmet. Mirá el menú y pedí online." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="El Sabor del Pecado | Sandwichería Gourmet" />
+  <meta property="og:description" content="Sándwiches, platos y empanadas gourmet. Mirá el menú y pedí online." />
+  <meta property="og:image" content="images/og-share.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/png" href="images/icons/icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -159,6 +164,8 @@
         <input type="text" id="customerEmail" placeholder="Ej: juan@email.com" />
       </div>
 
+      <button type="button" class="forget-link hidden" id="forgetData">Olvidar mis datos guardados en este celular</button>
+
       <div class="field">
         <label>Método de entrega</label>
         <div class="shipping-options">
@@ -173,10 +180,15 @@
             <span class="shipping-option-icon"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="17" r="2.6"/><circle cx="18" cy="17" r="2.6"/><path d="M8.6 17h6.8l-2.2-8H10"/><path d="M13.2 9H16l2 8"/><path d="M4 9h4"/></svg></span>
             <span>
               <strong>Envío a domicilio</strong>
-              <small>Consultar zona y costo</small>
+              <small id="deliveryHint">Consultar zona y costo</small>
             </span>
           </button>
         </div>
+      </div>
+
+      <div class="field hidden" id="deliveryZoneField">
+        <label for="deliveryZone">Zona de entrega</label>
+        <select id="deliveryZone"></select>
       </div>
 
       <div class="field hidden" id="deliveryAddressField">
@@ -193,6 +205,10 @@
         </div>
       </div>
 
+      <div class="fee-row hidden" id="checkoutFeeRow">
+        <span>Envío</span>
+        <span id="checkoutFee"></span>
+      </div>
       <div class="cart-total-row">
         <span>Total</span>
         <span id="checkoutTotal">$0</span>
@@ -231,6 +247,10 @@
         <div class="resumen-contact" id="resumenShipping"></div>
       </div>
 
+      <div class="fee-row hidden" id="resumenFeeRow">
+        <span>Envío</span>
+        <span id="resumenFee"></span>
+      </div>
       <div class="cart-total-row">
         <span>Total</span>
         <span id="resumenTotal">$0</span>
@@ -256,6 +276,7 @@
   <div class="toast" id="toast"></div>
 
   <script src="js/lightbox.js"></script>
+  <script src="js/rules.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

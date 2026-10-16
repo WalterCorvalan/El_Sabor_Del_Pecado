@@ -2534,3 +2534,47 @@ body.ready .hero-poster-img {
   60% { transform: rotate(-8deg); }
   80% { transform: rotate(4deg); }
 }
+
+/* ---------- ENVÍO, ZONA Y DATOS GUARDADOS ---------- */
+.field select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--negro);
+  color: var(--blanco);
+  font-size: 14px;
+}
+
+.field select:focus {
+  outline: none;
+  border-color: var(--dorado);
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.15);
+}
+
+.fee-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #d8cfc5;
+  padding: 10px 0 0;
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.fee-row + .cart-total-row {
+  border-top: none;
+}
+
+.forget-link {
+  display: block;
+  margin: -4px 0 14px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--gris);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}

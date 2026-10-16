@@ -2,7 +2,7 @@ const { getCatalogStore } = require("./utils/blob-store");
 const { defaultCatalog } = require("./utils/default-catalog");
 const { verifyToken, getBearerToken } = require("./utils/auth");
 
-// Vuelve el menú al catálogo base del código. Conserva el WhatsApp y el estado del local.
+// Vuelve el menú al catálogo base del código. Conserva el WhatsApp, el estado del local, los horarios y el envío.
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -31,6 +31,8 @@ exports.handler = async (event) => {
       if (current.whatsappNumber) fresh.whatsappNumber = current.whatsappNumber;
       if (typeof current.storeOpen === "boolean") fresh.storeOpen = current.storeOpen;
       if (typeof current.closedMessage === "string") fresh.closedMessage = current.closedMessage;
+      if (current.schedule) fresh.schedule = current.schedule;
+      if (current.delivery) fresh.delivery = current.delivery;
     }
 
     await store.setJSON("catalog", fresh);

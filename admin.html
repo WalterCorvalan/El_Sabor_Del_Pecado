@@ -11,6 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/admin.css" />
+  <link rel="stylesheet" href="css/ticket.css" />
 </head>
 <body>
   <!-- Ingreso -->
@@ -36,13 +37,17 @@
         <button class="btn btn-ghost-dark btn-sm" id="logoutBtn" type="button">Salir</button>
       </div>
       <nav class="tabs" id="tabs">
-        <button class="tab active" type="button" data-tab="menu">Menú</button>
+        <button class="tab active" type="button" data-tab="pedidos">Pedidos <span class="tab-badge hidden" id="ordersBadge">0</span></button>
+        <button class="tab" type="button" data-tab="menu">Menú</button>
+        <button class="tab" type="button" data-tab="stats">Estadísticas</button>
         <button class="tab" type="button" data-tab="ajustes">Ajustes</button>
       </nav>
     </header>
 
     <main class="wrap">
-      <section id="tabMenu"></section>
+      <section id="tabPedidos"><div class="empty-box">Cargando pedidos...</div></section>
+      <section id="tabStats" class="hidden"></section>
+      <section id="tabMenu" class="hidden"></section>
       <section id="tabAjustes" class="hidden"></section>
     </main>
 
@@ -54,8 +59,11 @@
     </div>
   </div>
 
+  <div class="print-area" id="printArea"></div>
+
   <div class="toast" id="toast" role="status"></div>
 
+  <script src="js/ticket.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>

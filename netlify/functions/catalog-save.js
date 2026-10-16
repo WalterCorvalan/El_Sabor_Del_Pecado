@@ -1,10 +1,48 @@
 const { getCatalogStore } = require("./utils/blob-store");
 const { verifyToken, getBearerToken } = require("./utils/auth");
 
+const Rules = require("../../js/rules.js");
+
 const MAX_BODY_BYTES = 500 * 1024;
 
 function isNonEmptyString(v) {
   return typeof v === "string" && v.trim().length > 0;
+}
+
+function isMoney(v) {
+  return typeof v === "number" && Number.isFinite(v) && v >= 0;
+}
+
+function validateSchedule(schedule) {
+  if (schedule === undefined) return null;
+  if (!schedule || typeof schedule !== "object") return "Los horarios son inválidos";
+  if (typeof schedule.enabled !== "boolean") return "Los horarios son inválidos";
+  if (!Array.isArray(schedule.days) || schedule.days.length !== 7) return "Los horarios deben tener los 7 días";
+  for (let i = 0; i < 7; i++) {
+    const day = schedule.days[i];
+    if (!day || typeof day.open !== "boolean") return "Los horarios son inválidos";
+    if (day.open && (Rules.toMinutes(day.from) === null || Rules.toMinutes(day.to) === null)) {
+      return `El horario del ${Rules.DAY_NAMES[i]} es inválido (usá el formato 19:00)`;
+    }
+  }
+  return null;
+}
+
+function validateDelivery(delivery) {
+  if (delivery === undefined) return null;
+  if (!delivery || typeof delivery !== "object") return "La configuración de envío es inválida";
+  if (typeof delivery.enabled !== "boolean") return "La configuración de envío es inválida";
+  if (!isMoney(delivery.fee)) return "El costo de envío es inválido";
+  if (!isMoney(delivery.freeFrom)) return "El monto de envío gratis es inválido";
+  if (!Array.isArray(delivery.zones)) return "Las zonas de envío son inválidas";
+  const ids = new Set();
+  for (const zone of delivery.zones) {
+    if (!zone || !isNonEmptyString(zone.id) || !isNonEmptyString(zone.name)) return "Cada zona necesita nombre";
+    if (!isMoney(zone.fee)) return `El costo de la zona ${zone.name} es inválido`;
+    if (ids.has(zone.id)) return "Hay zonas repetidas";
+    ids.add(zone.id);
+  }
+  return null;
 }
 
 function validateCatalog(catalog) {
@@ -16,6 +54,9 @@ function validateCatalog(catalog) {
   if (!Array.isArray(catalog.categories)) return "Faltan las categorías";
   if (catalog.storeOpen !== undefined && typeof catalog.storeOpen !== "boolean") return "El estado del local es inválido";
   if (catalog.closedMessage !== undefined && typeof catalog.closedMessage !== "string") return "El mensaje de local cerrado es inválido";
+
+  const settingsError = validateSchedule(catalog.schedule) || validateDelivery(catalog.delivery);
+  if (settingsError) return settingsError;
 
   for (const category of catalog.categories) {
     if (!isNonEmptyString(category.id) || !isNonEmptyString(category.name)) {

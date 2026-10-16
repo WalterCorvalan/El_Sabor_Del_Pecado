@@ -62,6 +62,14 @@
     checkoutModalClose: document.getElementById("checkoutModalClose"),
     deliveryAddress: document.getElementById("deliveryAddress"),
     deliveryAddressField: document.getElementById("deliveryAddressField"),
+    deliveryZoneField: document.getElementById("deliveryZoneField"),
+    deliveryZone: document.getElementById("deliveryZone"),
+    deliveryHint: document.getElementById("deliveryHint"),
+    checkoutFeeRow: document.getElementById("checkoutFeeRow"),
+    checkoutFee: document.getElementById("checkoutFee"),
+    resumenFeeRow: document.getElementById("resumenFeeRow"),
+    resumenFee: document.getElementById("resumenFee"),
+    forgetData: document.getElementById("forgetData"),
     customerName: document.getElementById("customerName"),
     customerPhone: document.getElementById("customerPhone"),
     customerEmail: document.getElementById("customerEmail"),
@@ -166,6 +174,9 @@
       state.catalog = await res.json();
       renderCategoryTabs();
       renderCatalog();
+      setupDelivery();
+      applySavedCustomer();
+      startStatusWatcher();
     } catch (err) {
       console.error(err);
       el.loadingState.textContent = "No pudimos cargar el menú. Probá recargar la página.";
@@ -219,7 +230,11 @@
     const closed = storeIsClosed();
     banner.classList.toggle("hidden", !closed);
     if (closed) {
-      const message = state.catalog.closedMessage || "Por el momento no estamos tomando pedidos. ¡Volvemos pronto!";
+      const status = Rules.storeStatus(state.catalog);
+      const message =
+        status.reason === "schedule"
+          ? `Por ahora no estamos tomando pedidos.${status.nextOpen ? ` Abrimos ${status.nextOpen}.` : ""}`
+          : state.catalog.closedMessage || "Por el momento no estamos tomando pedidos. ¡Volvemos pronto!";
       banner.innerHTML = `<div><strong>Local cerrado</strong>${escapeHtml(message)}</div>`;
     }
   }
@@ -300,7 +315,22 @@
   const ZOOM_ICON = svg('<circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8M10.5 8v5M8 10.5h5"/>');
 
   function storeIsClosed() {
-    return !!state.catalog && state.catalog.storeOpen === false;
+    return !!state.catalog && !Rules.storeStatus(state.catalog).open;
+  }
+
+  // Los horarios cambian solos: cada minuto se revisa si el local abrió o cerró.
+  let statusTimer = null;
+  let lastStoreClosed = null;
+  function startStatusWatcher() {
+    lastStoreClosed = storeIsClosed();
+    if (statusTimer) return;
+    statusTimer = setInterval(() => {
+      if (!state.catalog) return;
+      const closed = storeIsClosed();
+      if (closed === lastStoreClosed) return;
+      lastStoreClosed = closed;
+      renderCatalog();
+    }, 60000);
   }
 
   function productCardHtml(category, product) {
@@ -743,7 +773,7 @@
         return `<div>${item.qty}x ${escapeHtml(item.name)}${selectionsText ? " (" + escapeHtml(selectionsText) + ")" : ""} — ${money(item.price * item.qty)}</div>`;
       })
       .join("");
-    el.checkoutTotal.textContent = money(cartTotal());
+    renderTotals();
   }
 
   document.querySelectorAll(".payment-option").forEach((btn) => {
@@ -759,20 +789,134 @@
       document.querySelectorAll(".shipping-option").forEach((b) => b.classList.remove("selected"));
       btn.classList.add("selected");
       selectedShipping = btn.dataset.shipping;
-      el.deliveryAddressField.classList.toggle("hidden", selectedShipping !== "Envío a domicilio");
+      el.deliveryAddressField.classList.toggle("hidden", selectedShipping !== Rules.DELIVERY);
+      updateDeliveryUi();
     });
   });
 
+  // ---------------- Envío y totales ----------------
+  function setupDelivery() {
+    const cfg = Rules.deliveryConfig(state.catalog);
+
+    if (!cfg.enabled) {
+      el.deliveryHint.textContent = "Consultar zona y costo";
+    } else if (cfg.zones.length) {
+      el.deliveryHint.textContent = "El costo depende de tu zona";
+    } else if (cfg.fee > 0) {
+      el.deliveryHint.textContent = `Costo de envío ${money(cfg.fee)}`;
+    } else {
+      el.deliveryHint.textContent = "Sin cargo de envío";
+    }
+    if (cfg.enabled && cfg.freeFrom > 0) {
+      el.deliveryHint.textContent += ` · Gratis desde ${money(cfg.freeFrom)}`;
+    }
+
+    el.deliveryZone.innerHTML =
+      '<option value="">Elegí tu zona</option>' +
+      cfg.zones
+        .map((z) => `<option value="${escapeHtml(z.id)}">${escapeHtml(z.name)} — ${money(z.fee)}</option>`)
+        .join("");
+    updateDeliveryUi();
+  }
+
+  function updateDeliveryUi() {
+    const cfg = Rules.deliveryConfig(state.catalog);
+    const isDelivery = selectedShipping === Rules.DELIVERY;
+    el.deliveryZoneField.classList.toggle("hidden", !(isDelivery && cfg.enabled && cfg.zones.length));
+    renderTotals();
+  }
+
+  el.deliveryZone.addEventListener("change", renderTotals);
+
+  // Subtotal + envío (según entrega y zona). El servidor vuelve a calcularlo al guardar el pedido.
+  function orderTotals() {
+    const subtotal = cartTotal();
+    if (selectedShipping !== Rules.DELIVERY || !state.catalog) {
+      return { subtotal, fee: 0, total: subtotal, zone: null, info: null };
+    }
+    const info = Rules.deliveryFee(state.catalog, subtotal, el.deliveryZone.value);
+    return { subtotal, fee: info.fee, total: subtotal + info.fee, zone: info.zone, info };
+  }
+
+  function feeText(info) {
+    if (!info || !info.enabled) return "";
+    if (info.needsZone) return "Elegí tu zona";
+    return info.free ? "Gratis" : money(info.fee);
+  }
+
+  function renderTotals() {
+    const t = orderTotals();
+    const text = feeText(t.info);
+    [[el.checkoutFeeRow, el.checkoutFee], [el.resumenFeeRow, el.resumenFee]].forEach(([row, value]) => {
+      row.classList.toggle("hidden", !text);
+      value.textContent = text;
+    });
+    el.checkoutTotal.textContent = money(t.total);
+    el.resumenTotal.textContent = money(t.total);
+  }
+
+  // ---------------- Datos del cliente guardados en el celular ----------------
+  const CUSTOMER_KEY = "esdp_customer_v1";
+
+  function loadCustomer() {
+    try {
+      return JSON.parse(localStorage.getItem(CUSTOMER_KEY)) || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function saveCustomer(data) {
+    try {
+      localStorage.setItem(CUSTOMER_KEY, JSON.stringify(data));
+      el.forgetData.classList.remove("hidden");
+    } catch (_) {}
+  }
+
+  function applySavedCustomer() {
+    const saved = loadCustomer();
+    if (!saved) return;
+    el.customerName.value = saved.name || "";
+    el.customerPhone.value = saved.phone || "";
+    el.customerEmail.value = saved.email || "";
+    el.deliveryAddress.value = saved.address || "";
+    if (saved.zoneId) el.deliveryZone.value = saved.zoneId;
+    if (saved.payment) {
+      document.querySelector(`.payment-option[data-payment="${saved.payment}"]`)?.click();
+    }
+    if (saved.shipping) {
+      document.querySelector(`.shipping-option[data-shipping="${saved.shipping}"]`)?.click();
+    }
+    el.forgetData.classList.remove("hidden");
+  }
+
+  el.forgetData.addEventListener("click", () => {
+    try {
+      localStorage.removeItem(CUSTOMER_KEY);
+    } catch (_) {}
+    el.customerName.value = "";
+    el.customerPhone.value = "";
+    el.customerEmail.value = "";
+    el.deliveryAddress.value = "";
+    el.deliveryZone.value = "";
+    el.forgetData.classList.add("hidden");
+    renderTotals();
+    showToast("Listo, borramos tus datos de este celular");
+  });
+
   function buildOrderMessage(cart, total, contact, payment, extraNote) {
-    const { name, phone, email, shipping, address } = contact;
+    const { name, phone, email, shipping, address, number, deliveryFee, zoneName } = contact;
     const lines = [];
-    lines.push("¡Hola! Quiero hacer un pedido 🔥");
+    lines.push(number ? `¡Hola! Quiero hacer un pedido 🔥 (*Pedido #${number}*)` : "¡Hola! Quiero hacer un pedido 🔥");
     lines.push("");
     lines.push("*Pedido:*");
     cart.forEach((item) => {
       const selectionsText = lineDetailsText(item);
       lines.push(`- ${item.qty}x ${item.name}${selectionsText ? ` (${selectionsText})` : ""} — ${money(item.price * item.qty)}`);
     });
+    if (shipping === Rules.DELIVERY && deliveryFee !== undefined) {
+      lines.push(`- Envío${zoneName ? ` (${zoneName})` : ""} — ${deliveryFee > 0 ? money(deliveryFee) : "Gratis"}`);
+    }
     lines.push("");
     lines.push(`*Total: ${money(total)}*`);
     lines.push("");
@@ -780,7 +924,7 @@
     lines.push(`*Teléfono:* ${phone}`);
     if (email) lines.push(`*Email:* ${email}`);
     lines.push(`*Entrega:* ${shipping}`);
-    if (shipping === "Envío a domicilio") lines.push(`*Dirección:* ${address}`);
+    if (shipping === Rules.DELIVERY) lines.push(`*Dirección:* ${address}`);
     lines.push(`*Medio de pago:* ${payment}`);
     if (extraNote) {
       lines.push("");
@@ -813,9 +957,14 @@
       el.customerPhone.focus();
       return;
     }
-    if (selectedShipping === "Envío a domicilio" && !address) {
+    if (selectedShipping === Rules.DELIVERY && !address) {
       showToast("Ingresá una dirección de entrega");
       el.deliveryAddress.focus();
+      return;
+    }
+    if (selectedShipping === Rules.DELIVERY && orderTotals().info?.needsZone) {
+      showToast("Elegí tu zona de entrega");
+      el.deliveryZone.focus();
       return;
     }
     if (!state.cart.length) {
@@ -840,10 +989,11 @@
 
     el.resumenShipping.innerHTML = `
       <div>${escapeHtml(selectedShipping)}</div>
-      ${selectedShipping === "Envío a domicilio" ? `<div>${escapeHtml(address)}</div>` : ""}
+      ${selectedShipping === Rules.DELIVERY && orderTotals().zone ? `<div>Zona: ${escapeHtml(orderTotals().zone.name)}</div>` : ""}
+      ${selectedShipping === Rules.DELIVERY ? `<div>${escapeHtml(address)}</div>` : ""}
     `;
 
-    el.resumenTotal.textContent = money(cartTotal());
+    renderTotals();
     el.resumenModalBackdrop.classList.add("open");
   });
   el.checkoutModalClose.addEventListener("click", () => el.checkoutModalBackdrop.classList.remove("open"));
@@ -856,57 +1006,124 @@
     });
   });
 
+  function resetConfirmButton() {
+    el.confirmResumen.disabled = false;
+    el.confirmResumen.textContent = "Confirmar pedido";
+  }
+
+  // Guarda el pedido en el servidor (que recalcula precios y envío).
+  // Devuelve { saved } si se guardó, { rejected } si el servidor lo rechazó (ej. local cerrado)
+  // o { unavailable } si no hubo conexión o falló el servidor.
+  async function submitOrder(contact) {
+    try {
+      const res = await fetch("/api/order-create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: state.cart.map((item) => ({
+            productId: item.productId,
+            qty: item.qty,
+            selections: item.selections,
+            extraIds: (item.extras || []).map((e) => e.id),
+            notes: item.notes || ""
+          })),
+          customer: { name: contact.name, phone: contact.phone, email: contact.email },
+          shipping: contact.shipping,
+          zoneId: el.deliveryZone.value,
+          address: contact.shipping === Rules.DELIVERY ? contact.address : "",
+          payment: selectedPayment
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) return { saved: data };
+      if (res.status >= 400 && res.status < 500) return { rejected: data.error || "No se pudo enviar el pedido" };
+      return { unavailable: true };
+    } catch (err) {
+      console.error(err);
+      return { unavailable: true };
+    }
+  }
+
   el.confirmResumen.addEventListener("click", async () => {
     const name = el.customerName.value.trim();
     const phone = el.customerPhone.value.trim();
     const email = el.customerEmail.value.trim();
-    const address = selectedShipping === "Envío a domicilio" ? el.deliveryAddress.value.trim() : "Retiro en el local";
+    const typedAddress = el.deliveryAddress.value.trim();
+    const address = selectedShipping === Rules.DELIVERY ? typedAddress : "Retiro en el local";
     const contact = { name, phone, email, shipping: selectedShipping, address };
 
+    el.confirmResumen.disabled = true;
+    el.confirmResumen.textContent = selectedPayment === "Mercado Pago" ? "Iniciando pago..." : "Enviando pedido...";
+
+    const totals = orderTotals();
+    const result = await submitOrder(contact);
+
+    if (result.rejected) {
+      showToast(result.rejected);
+      resetConfirmButton();
+      return;
+    }
+
+    // Con Mercado Pago el pedido tiene que estar guardado para poder cobrarlo.
+    if (result.unavailable && selectedPayment === "Mercado Pago") {
+      showToast("No pudimos iniciar el pago. Probá de nuevo en un momento.");
+      resetConfirmButton();
+      return;
+    }
+
+    const saved = result.saved || null;
+    // Con el pedido guardado se usan los montos del servidor.
+    contact.number = saved ? saved.number : undefined;
+    contact.deliveryFee = saved ? saved.deliveryFee : totals.fee;
+    contact.zoneName = totals.zone ? totals.zone.name : "";
+    const total = saved ? saved.total : totals.total;
+
+    saveCustomer({
+      name,
+      phone,
+      email,
+      address: typedAddress,
+      shipping: selectedShipping,
+      zoneId: el.deliveryZone.value,
+      payment: selectedPayment
+    });
+
     if (selectedPayment === "Mercado Pago") {
-      el.confirmResumen.disabled = true;
-      el.confirmResumen.textContent = "Iniciando pago...";
       try {
         const res = await fetch("/api/create-payment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            items: state.cart.map((item) => ({
-              productId: item.productId,
-              qty: item.qty,
-              selections: item.selections,
-              extraIds: (item.extras || []).map((e) => e.id)
-            })),
-            address,
-            phone
-          })
+          body: JSON.stringify({ orderId: saved.orderId })
         });
         const data = await res.json();
 
         if (!res.ok || !data.checkoutUrl) {
           showToast(data.error || "No se pudo iniciar el pago");
-          el.confirmResumen.disabled = false;
-          el.confirmResumen.textContent = "Confirmar pedido";
+          resetConfirmButton();
           return;
         }
 
-        sessionStorage.setItem(
-          PENDING_ORDER_KEY,
-          JSON.stringify({ cart: state.cart, total: cartTotal(), contact })
-        );
+        sessionStorage.setItem(PENDING_ORDER_KEY, JSON.stringify({ cart: state.cart, total, contact }));
         window.location.href = data.checkoutUrl;
       } catch (err) {
         console.error(err);
         showToast("Error de conexión al iniciar el pago");
-        el.confirmResumen.disabled = false;
-        el.confirmResumen.textContent = "Confirmar pedido";
+        resetConfirmButton();
       }
       return;
     }
 
-    const message = buildOrderMessage(state.cart, cartTotal(), contact, selectedPayment);
+    const message = buildOrderMessage(state.cart, total, contact, selectedPayment);
     openWhatsappWithMessage(message);
+    resetConfirmButton();
     el.resumenModalBackdrop.classList.remove("open");
+
+    if (saved) {
+      state.cart = [];
+      renderCartBadge();
+      renderCartModal();
+      showToast(`Pedido #${saved.number} enviado`);
+    }
   });
 
   // ---------------- Vuelta de Mercado Pago ----------------
@@ -927,7 +1144,9 @@
           const detailsText = lineDetailsText(item);
           return `<div>${item.qty}x ${escapeHtml(item.name)}${detailsText ? " (" + escapeHtml(detailsText) + ")" : ""} — ${money(item.price * item.qty)}</div>`;
         })
-        .join("") + `<div style="margin-top:8px;font-weight:800;">Total: ${money(pending.total)}</div>`;
+        .join("") +
+        (pending.contact.deliveryFee > 0 ? `<div>Envío — ${money(pending.contact.deliveryFee)}</div>` : "") +
+        `<div style="margin-top:8px;font-weight:800;">Total: ${money(pending.total)}</div>`;
 
       el.paymentResultWhatsapp.onclick = () => {
         const message = buildOrderMessage(

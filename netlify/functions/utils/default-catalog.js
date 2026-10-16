@@ -11,14 +11,12 @@ const IMG_PLATO =
   "https://images.unsplash.com/photo-1544510808-984e5f10e1f3?auto=format&fit=crop&w=900&q=80";
 const IMG_EMPANADA =
   "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=900&q=80";
-const IMG_DIP =
-  "https://images.unsplash.com/photo-1472476443507-c7a5948772fc?auto=format&fit=crop&w=900&q=80";
-
 const GUARNICIONES = [
-  "Batatas en cubos al horno",
-  "Papas españolas",
+  "Batatas en cubos",
   "Puré de boniato",
-  "Puré de papas con hierbas"
+  "Puré de papas especiado",
+  "Papas españolas",
+  "Papas bastón"
 ];
 
 function guarnicionVariant() {
@@ -235,11 +233,11 @@ function defaultCatalog() {
         id: "dips",
         name: "Dips de Salsas",
         products: [
-          product("dip-glase-miel-mostaza", "Glase de miel y mostaza", "Dip de glase de miel y mostaza.", IMG_DIP, [], 1500),
-          product("dip-barbacoa", "Barbacoa", "Dip de salsa barbacoa.", IMG_DIP, [], 1500),
-          product("dip-mayo-tabasco", "Mayo aliñada al Tabasco", "Dip de mayonesa aliñada al Tabasco.", IMG_DIP, [], 1500),
-          product("dip-honey-mustard", "Honey Mustard", "Dip de honey mustard.", IMG_DIP, [], 1500),
-          product("dip-alioli-ciboulette", "Alioli con ciboulette", "Dip de alioli con ciboulette.", IMG_DIP, [], 1500)
+          product("dip-glase-miel-mostaza", "Glase de miel y mostaza", "Dip de glase de miel y mostaza.", "images/menu/dip-glase-miel-mostaza.webp", [], 1500),
+          product("dip-barbacoa", "Barbacoa", "Dip de salsa barbacoa.", "images/menu/dip-barbacoa.webp", [], 1500),
+          product("dip-mayo-tabasco", "Mayo aliñada al Tabasco", "Dip de mayonesa aliñada al Tabasco.", "images/menu/dip-mayo-tabasco.webp", [], 1500),
+          product("dip-honey-mustard", "Honey Mustard", "Dip de honey mustard.", "images/menu/dip-honey-mustard.webp", [], 1500),
+          product("dip-alioli-ciboulette", "Alioli con ciboulette", "Dip de alioli con ciboulette.", "images/menu/dip-alioli-ciboulette.webp", [], 1500)
         ]
       },
       {
@@ -248,8 +246,8 @@ function defaultCatalog() {
         products: [
           product(
             "coca-cola",
-            "Coca-Cola",
-            "Línea Coca-Cola.",
+            "Gaseosas",
+            "Gaseosa bien fría.",
             "https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=900&q=80",
             [
               {
@@ -257,14 +255,14 @@ function defaultCatalog() {
                 name: "Variedad",
                 multiple: false,
                 required: true,
-                options: ["Coca-Cola", "Coca-Cola Zero", "Sprite", "Fanta"]
+                options: ["Coca-Cola", "Coca-Cola Zero", "Sprite", "Sprite Zero", "Fanta"]
               }
             ],
             2000
           ),
           product(
             "cerveza",
-            "Cerveza",
+            "Cervezas",
             "Cerveza bien fría.",
             "https://images.unsplash.com/photo-1608270586620-248524c67de9?auto=format&fit=crop&w=900&q=80",
             [
