@@ -337,7 +337,7 @@
     const img = product.image || "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=900&q=80";
     const soldOut = product.available === false;
     const closed = storeIsClosed();
-    const buttonLabel = soldOut ? "Agotado" : closed ? "Cerrado" : "Agregar";
+    const buttonLabel = soldOut ? "Agotado" : closed ? "Cerrado" : "Opciones";
     return `
       <article class="product-card reveal${soldOut ? " is-sold-out" : ""}" data-pid="${escapeHtml(product.id)}">
         <div class="thumb-wrap" role="button" tabindex="0" aria-label="Ampliar foto de ${escapeHtml(product.name)}">
