@@ -74,6 +74,7 @@ y el catálogo se guarda en Vercel Blob (ver `netlify/functions/utils/blob-store
 - Cada pedido se guarda (Vercel Blob o Netlify Blobs) y se ve en `/admin.html`, pestaña **Pedidos**, con botón para imprimir el ticket de 80 mm. La pestaña **Estadísticas** resume ventas, lo más pedido y los horarios de más pedidos.
 - En **Ajustes** se activan, de forma opcional, los horarios automáticos y el costo de envío (general o por zona).
 - Las reglas de horarios, envío y precios están en `js/rules.js` y las usan la tienda y el servidor.
+- **Precio por cantidad (docena):** cada categoría puede tener un precio por pack (Admin → Menú → categoría → "Precio por cantidad"). Hoy Empanadas Gourmet cobra cada 12 empanadas, de cualquier gusto, a $33.000; las que sobran van a $3.000. El descuento lo calculan `js/rules.js` (carrito y servidor), y en Mercado Pago el pack se manda como un solo ítem.
 - **Seguimiento:** cada pedido tiene un link (`seguimiento.html?o=...`) que se manda en el mensaje de WhatsApp y que el cliente ve en una barra en el sitio. Muestra Recibido, Preparando, Listo y Entregado, y se actualiza solo.
 - **Tiempo estimado:** se configura en Admin → Ajustes.
 - **Promos:** hay una categoría "Promos" oculta con un combo de ejemplo. Se activa con el interruptor de la categoría en Admin → Menú (y hay que cargarle el precio). Una categoría oculta no se puede pedir.

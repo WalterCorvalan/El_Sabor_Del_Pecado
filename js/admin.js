@@ -255,6 +255,7 @@
             </div>
           </header>
           <div class="cat-body">
+            ${bundleRowHtml(cat)}
             ${products.map((p) => productHtml(cat, p)).join("") || '<div class="empty-box">Todavía no hay productos en esta categoría.</div>'}
             <button class="btn btn-ghost btn-block" type="button" data-action="prod-add">${icon("plus")} Agregar producto</button>
           </div>
@@ -1315,6 +1316,7 @@
         </div>
         <div class="order-ship">${isDelivery ? "Envío a domicilio" : "Retiro en local"}${order.zone ? ` (${esc(order.zone.name)})` : ""}${isDelivery ? ` — ${esc(order.address)}` : ""}</div>
         <ul class="order-items">${items}</ul>
+        ${order.discount > 0 ? `<div class="o-detail">Promo: -${money(order.discount)}</div>` : ""}
         ${order.deliveryFee > 0 ? `<div class="o-detail">Envío: ${money(order.deliveryFee)}</div>` : ""}
         <div class="order-pay">Pago: <strong>${esc(order.payment)}</strong></div>
         ${mpNote}
@@ -1468,6 +1470,48 @@
     if (!cat) return;
     cat.hidden = !target.checked;
     catEl.classList.toggle("is-hidden", cat.hidden);
+    markDirty();
+  });
+
+  // ---------------- Promo por cantidad (ej. docena de empanadas) ----------------
+  function bundleRowHtml(cat) {
+    const b = cat.bundle || { enabled: false, size: 12, price: 0 };
+    return `
+      <div class="bundle-row" data-bundle>
+        <label class="switch"><input type="checkbox" data-bundle-field="enabled" ${b.enabled ? "checked" : ""} /><span class="slider"></span> <span>Precio por cantidad</span></label>
+        <div class="bundle-fields${b.enabled ? "" : " is-disabled"}">
+          <input type="text" inputmode="numeric" data-bundle-field="size" value="${esc(b.size)}" aria-label="Cantidad" />
+          <span>unidades por $</span>
+          <input type="text" inputmode="numeric" data-bundle-field="price" value="${esc(b.price)}" aria-label="Precio del pack" />
+        </div>
+        <p class="hint">Cada pack completo (de cualquier gusto de esta categoría) se cobra el precio indicado en lugar de sumar uno por uno. Lo que sobra se cobra normal.</p>
+      </div>`;
+  }
+
+  function bundleOf(target) {
+    const catEl = target.closest("[data-cat]");
+    const cat = catEl && findCategory(catEl.dataset.cat);
+    if (!cat) return null;
+    if (!cat.bundle) cat.bundle = { enabled: false, size: 12, price: 0 };
+    return { cat, catEl, bundle: cat.bundle };
+  }
+
+  el.tabMenu.addEventListener("change", (e) => {
+    if (!e.target.matches("[data-bundle-field='enabled']")) return;
+    const ctx = bundleOf(e.target);
+    if (!ctx) return;
+    ctx.bundle.enabled = e.target.checked;
+    ctx.catEl.querySelector(".bundle-fields").classList.toggle("is-disabled", !e.target.checked);
+    markDirty();
+  });
+
+  el.tabMenu.addEventListener("input", (e) => {
+    const field = e.target.dataset && e.target.dataset.bundleField;
+    if (field !== "size" && field !== "price") return;
+    const ctx = bundleOf(e.target);
+    if (!ctx) return;
+    const value = parseFloat(String(e.target.value).replace(/\./g, "").replace(",", "."));
+    ctx.bundle[field] = Number.isFinite(value) && value >= 0 ? (field === "size" ? Math.floor(value) : value) : 0;
     markDirty();
   });
 

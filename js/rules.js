@@ -118,6 +118,68 @@
     return value;
   }
 
+  // ---------------- Promo por cantidad (ej. docena de empanadas) ----------------
+  // category.bundle = { enabled, size, price }: cada "size" unidades de la categoría se cobran
+  // "price" en total. Cuenta juntas las unidades de todos los productos de la categoría
+  // (mezcladas como quieras) y el resto sigue al precio normal.
+  function bundleConfig(category) {
+    const b = category && category.bundle;
+    if (!b || !b.enabled) return null;
+    const size = Math.floor(Number(b.size));
+    const price = Number(b.price);
+    if (!Number.isFinite(size) || size < 2 || !Number.isFinite(price) || price <= 0) return null;
+    return { size, price };
+  }
+
+  function bundleLabel(group) {
+    return group.size === 12 ? "docena" : `pack de ${group.size}`;
+  }
+
+  // lines: [{ productId, qty, price }] (price = precio de una unidad)
+  // -> { discount, groups: [{ categoryId, name, size, price, units, packs, saved, missing }] }
+  function bundleDiscount(catalog, lines) {
+    const owner = new Map();
+    for (const category of catalog.categories || []) {
+      if (!bundleConfig(category)) continue;
+      for (const product of category.products || []) owner.set(product.id, category);
+    }
+
+    const byCategory = new Map();
+    for (const line of lines || []) {
+      const category = owner.get(line.productId);
+      if (!category) continue;
+      const entry = byCategory.get(category.id) || { category, units: [] };
+      for (let i = 0; i < Number(line.qty); i++) entry.units.push(Number(line.price));
+      byCategory.set(category.id, entry);
+    }
+
+    let discount = 0;
+    const groups = [];
+    for (const { category, units } of byCategory.values()) {
+      const { size, price } = bundleConfig(category);
+      units.sort((a, b) => a - b);
+      const packs = Math.floor(units.length / size);
+      let saved = 0;
+      if (packs > 0) {
+        const regular = units.slice(0, packs * size).reduce((sum, u) => sum + u, 0);
+        saved = Math.max(0, regular - packs * price);
+      }
+      const remainder = units.length % size;
+      groups.push({
+        categoryId: category.id,
+        name: category.name,
+        size,
+        price,
+        units: units.length,
+        packs,
+        saved,
+        missing: remainder === 0 ? 0 : size - remainder
+      });
+      discount += saved;
+    }
+    return { discount, groups };
+  }
+
   // ---------------- Precios ----------------
   function cleanText(value, max) {
     return String(value == null ? "" : value).replace(/\s+/g, " ").trim().slice(0, max);
@@ -134,9 +196,11 @@
 
     const products = new Map();
     const hiddenIds = new Set();
+    const categoryOf = new Map();
     for (const category of catalog.categories || []) {
       for (const product of category.products || []) {
         products.set(product.id, product);
+        categoryOf.set(product.id, category);
         if (category.hidden) hiddenIds.add(product.id);
       }
     }
@@ -185,16 +249,36 @@
       });
     }
 
+    // Promo por cantidad: el descuento se calcula acá, con los precios del catálogo.
+    const bundle = bundleDiscount(catalog, items);
+    const discountGroups = bundle.groups
+      .filter((g) => g.saved > 0)
+      .map((g) => ({ categoryId: g.categoryId, name: g.name, size: g.size, price: g.price, packs: g.packs, saved: g.saved }));
+    for (const item of items) {
+      const category = categoryOf.get(item.productId);
+      if (category && discountGroups.some((g) => g.categoryId === category.id)) item.bundleKey = category.id;
+    }
+    const net = subtotal - bundle.discount;
+
     let fee = 0;
     let zone = null;
     if (opts && opts.shipping === DELIVERY) {
-      const result = deliveryFee(catalog, subtotal, opts.zoneId);
+      const result = deliveryFee(catalog, net, opts.zoneId);
       if (result.needsZone) return { ok: false, error: "Elegí tu zona de entrega" };
       fee = result.fee;
       zone = result.zone ? { id: result.zone.id, name: result.zone.name } : null;
     }
 
-    return { ok: true, items, subtotal, deliveryFee: fee, zone, total: subtotal + fee };
+    return {
+      ok: true,
+      items,
+      subtotal,
+      discount: bundle.discount,
+      discountGroups,
+      deliveryFee: fee,
+      zone,
+      total: net + fee
+    };
   }
 
   return {
@@ -205,6 +289,8 @@
     deliveryConfig,
     deliveryFee,
     prepEstimate,
+    bundleDiscount,
+    bundleLabel,
     priceOrder
   };
 });

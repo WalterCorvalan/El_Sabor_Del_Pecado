@@ -650,8 +650,42 @@
     renderCartModal();
   }
 
+  // Precio del carrito con la promo por cantidad (ej. docena de empanadas) ya descontada.
+  function cartPricing() {
+    const gross = state.cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    if (!state.catalog) return { gross, discount: 0, net: gross, groups: [] };
+    const result = Rules.bundleDiscount(state.catalog, state.cart);
+    return { gross, discount: result.discount, net: gross - result.discount, groups: result.groups };
+  }
+
   function cartTotal() {
-    return state.cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    return cartPricing().net;
+  }
+
+  // Filas de descuento (checkout y resumen)
+  function discountRowsHtml() {
+    return cartPricing()
+      .groups.filter((g) => g.saved > 0)
+      .map((g) => `<div>Promo ${Rules.bundleLabel(g)}${g.packs > 1 ? " x" + g.packs : ""} — −${money(g.saved)}</div>`)
+      .join("");
+  }
+
+  // Aviso en el carrito: descuento logrado o cuánto falta para la promo.
+  function promoCartHtml() {
+    return cartPricing()
+      .groups.map((g) => {
+        const rows = [];
+        if (g.saved > 0) {
+          rows.push(`<div class="cart-promo ok"><span>Promo ${Rules.bundleLabel(g)}${g.packs > 1 ? " x" + g.packs : ""}</span><strong>−${money(g.saved)}</strong></div>`);
+        }
+        if (g.missing > 0) {
+          rows.push(
+            `<div class="cart-promo hint">Sumá ${g.missing} más de ${escapeHtml(g.name)} y completás ${g.packs > 0 ? "otra" : "la"} ${Rules.bundleLabel(g)} a ${money(g.price)}</div>`
+          );
+        }
+        return rows.join("");
+      })
+      .join("");
   }
 
   function cartItemCount() {
@@ -769,6 +803,7 @@
         stepper.querySelector(".qty-plus").addEventListener("click", () => updateCartQty(lineId, 1));
       });
     }
+    if (state.cart.length) el.cartItems.insertAdjacentHTML("beforeend", promoCartHtml());
     el.cartTotal.textContent = money(cartTotal());
   }
 
@@ -803,6 +838,7 @@
         return `<div>${item.qty}x ${escapeHtml(item.name)}${selectionsText ? " (" + escapeHtml(selectionsText) + ")" : ""} — ${money(item.price * item.qty)}</div>`;
       })
       .join("");
+    el.checkoutSummary.insertAdjacentHTML("beforeend", discountRowsHtml());
     renderTotals();
   }
 
@@ -868,6 +904,7 @@
     if (selectedShipping !== Rules.DELIVERY || !state.catalog) {
       return { subtotal, fee: 0, total: subtotal, zone: null, info: null };
     }
+    // El envío gratis cuenta sobre lo que se paga, ya con la promo descontada.
     const info = Rules.deliveryFee(state.catalog, subtotal, el.deliveryZone.value);
     return { subtotal, fee: info.fee, total: subtotal + info.fee, zone: info.zone, info };
   }
@@ -1000,6 +1037,9 @@
       const selectionsText = lineDetailsText(item);
       lines.push(`- ${item.qty}x ${item.name}${selectionsText ? ` (${selectionsText})` : ""} — ${money(item.price * item.qty)}`);
     });
+    (contact.promos || []).forEach((g) => {
+      lines.push(`- Promo ${g.size === 12 ? "docena" : "pack de " + g.size} ${g.name}${g.packs > 1 ? " x" + g.packs : ""} — -${money(g.saved)}`);
+    });
     if (shipping === Rules.DELIVERY && deliveryFee !== undefined) {
       lines.push(`- Envío${zoneName ? ` (${zoneName})` : ""} — ${deliveryFee > 0 ? money(deliveryFee) : "Gratis"}`);
     }
@@ -1073,6 +1113,7 @@
         return `<div>${item.qty}x ${escapeHtml(item.name)}${selectionsText ? " (" + escapeHtml(selectionsText) + ")" : ""} — ${money(item.price * item.qty)}</div>`;
       })
       .join("");
+    el.resumenItems.insertAdjacentHTML("beforeend", discountRowsHtml());
 
     el.resumenContact.innerHTML = `
       <div>${escapeHtml(name)}</div>
@@ -1169,6 +1210,9 @@
     contact.number = saved ? saved.number : undefined;
     contact.orderId = saved ? saved.orderId : undefined;
     contact.eta = saved ? saved.eta : undefined;
+    contact.promos = saved
+      ? saved.discountGroups || []
+      : cartPricing().groups.filter((g) => g.saved > 0);
     if (saved) rememberLastOrder(saved);
     contact.deliveryFee = saved ? saved.deliveryFee : totals.fee;
     contact.zoneName = totals.zone ? totals.zone.name : "";

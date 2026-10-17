@@ -47,12 +47,34 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: "Este pedido no es para pagar con Mercado Pago" }) };
   }
 
-  const mpItems = order.items.map((item) => ({
-    title: item.details && item.details.length ? `${item.name} (${item.details.join(" · ")})` : item.name,
-    quantity: item.qty,
-    unit_price: Number(item.price),
-    currency_id: "ARS"
-  }));
+  // Mercado Pago no acepta descuentos negativos: los productos de una promo por cantidad
+  // (por ejemplo, las docenas de empanadas) se mandan como un solo ítem con el precio final.
+  const mpItems = [];
+  const promoGroups = new Map();
+  for (const item of order.items) {
+    const group = item.bundleKey && (order.discountGroups || []).find((g) => g.categoryId === item.bundleKey);
+    if (group) {
+      const entry = promoGroups.get(group.categoryId) || { group, gross: 0, parts: [] };
+      entry.gross += Number(item.price) * item.qty;
+      entry.parts.push(`${item.qty}x ${item.name}`);
+      promoGroups.set(group.categoryId, entry);
+      continue;
+    }
+    mpItems.push({
+      title: item.details && item.details.length ? `${item.name} (${item.details.join(" · ")})` : item.name,
+      quantity: item.qty,
+      unit_price: Number(item.price),
+      currency_id: "ARS"
+    });
+  }
+  for (const { group, gross, parts } of promoGroups.values()) {
+    mpItems.push({
+      title: `${group.name} con promo (${parts.join(", ")})`.slice(0, 250),
+      quantity: 1,
+      unit_price: gross - group.saved,
+      currency_id: "ARS"
+    });
+  }
 
   if (order.deliveryFee > 0) {
     mpItems.push({

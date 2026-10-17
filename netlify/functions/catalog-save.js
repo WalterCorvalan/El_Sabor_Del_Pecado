@@ -77,6 +77,14 @@ function validateCatalog(catalog) {
     }
     if (!Array.isArray(category.products)) return `La categoría ${category.name} no tiene productos`;
     if (category.hidden !== undefined && typeof category.hidden !== "boolean") return `La categoría ${category.name} es inválida`;
+    if (category.bundle !== undefined) {
+      const b = category.bundle;
+      if (!b || typeof b !== "object" || typeof b.enabled !== "boolean") return `La promo por cantidad de ${category.name} es inválida`;
+      if (b.enabled && (!Number.isInteger(b.size) || b.size < 2 || b.size > 100)) {
+        return `La cantidad de la promo de ${category.name} tiene que ser un número entre 2 y 100`;
+      }
+      if (b.enabled && !isMoney(b.price)) return `El precio de la promo de ${category.name} es inválido`;
+    }
 
     for (const product of category.products) {
       if (!isNonEmptyString(product.id) || !isNonEmptyString(product.name)) {

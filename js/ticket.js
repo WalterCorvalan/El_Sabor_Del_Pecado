@@ -44,11 +44,23 @@
       .join("");
 
     const hasFeeLine = isDelivery && order.deliveryFee !== undefined;
-    const feeLines = hasFeeLine
-      ? `
-        <div class="t-row"><span>Subtotal</span><span>${money(order.subtotal ?? order.total - order.deliveryFee)}</span></div>
+    const hasDiscount = order.discount > 0;
+    const discountRows = (order.discountGroups || [])
+      .map(
+        (g) =>
+          `<div class="t-row"><span>Promo ${g.size === 12 ? "docena" : "x" + g.size}${g.packs > 1 ? " x" + g.packs : ""}</span><span>-${money(g.saved)}</span></div>`
+      )
+      .join("");
+    const feeLines =
+      hasFeeLine || hasDiscount
+        ? `
+        <div class="t-row"><span>Subtotal</span><span>${money(order.subtotal ?? order.total - (order.deliveryFee || 0) + (order.discount || 0))}</span></div>${discountRows}${
+            hasFeeLine
+              ? `
         <div class="t-row"><span>Envío${order.zone ? " (" + esc(order.zone.name) + ")" : ""}</span><span>${order.deliveryFee > 0 ? money(order.deliveryFee) : "Gratis"}</span></div>`
-      : "";
+              : ""
+          }`
+        : "";
 
     return `
       <div class="ticket">

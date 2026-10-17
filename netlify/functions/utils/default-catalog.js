@@ -49,22 +49,6 @@ function coccionVariant() {
   };
 }
 
-function gustosVariant() {
-  return {
-    id: "gustos",
-    name: "Gustos (elegí los que quieras)",
-    multiple: true,
-    required: true,
-    options: [
-      "Vacío braseado al vino tinto",
-      "Pollo al Funghi",
-      "Bondiola a la Barbacoa",
-      "Osobuco al Malbec",
-      "Bondiola Honey Mustard"
-    ]
-  };
-}
-
 function product(id, name, description, image, variants = [], price = 0, extras = []) {
   return { id, name, description, price, image, variants, extras };
 }
@@ -82,7 +66,7 @@ function sandwichExtras() {
 // se guardó antes de que existieran las fotos y los precios actuales), catalog-get lo reemplaza
 // UNA vez por el menú inicial, conservando los ajustes (WhatsApp, horarios, envío, etc.).
 // Subir este número a propósito pisa los cambios hechos en el admin: solo hacerlo si se quiere eso.
-const MENU_VERSION = 2;
+const MENU_VERSION = 3;
 
 function defaultCatalog() {
   return {
@@ -186,11 +170,13 @@ function defaultCatalog() {
       {
         id: "empanadas",
         name: "Empanadas Gourmet",
+        // Cada 12 empanadas (de cualquier gusto) se cobran $33.000 en vez de 12 x $3.000.
+        bundle: { enabled: true, size: 12, price: 33000 },
         products: [
           product(
             "empanada-vacio",
-            "Empanada de Vacío braseado al vino tinto",
-            "Empanada gourmet de vacío braseado al vino tinto.",
+            "Empanada de Vacío especial de autor",
+            "Empanada gourmet de vacío especial de autor.",
             "images/menu/empanada-vacio.webp",
             [coccionVariant()],
             3000
@@ -226,14 +212,6 @@ function defaultCatalog() {
             "images/menu/empanada-bondiola-honey-mustard.webp",
             [coccionVariant()],
             3000
-          ),
-          product(
-            "empanada-docena",
-            "Docena de empanadas",
-            "12 empanadas gourmet, mezcladas como quieras. Elegí los gustos y aclará en Observaciones cuántas querés de cada uno.",
-            "images/menu/empanada-vacio.webp",
-            [gustosVariant(), coccionVariant()],
-            33000
           )
         ]
       },
@@ -302,8 +280,32 @@ function defaultCatalog() {
   };
 }
 
+// Versión 2 -> 3: la empanada de vacío pasa a llamarse "especial de autor" y la docena deja de
+// ser un producto aparte: ahora es un precio automático por cantidad en la categoría.
+function patchToV3(stored) {
+  const c = JSON.parse(JSON.stringify(stored));
+  const category = (c.categories || []).find((x) => x.id === "empanadas");
+  if (category) {
+    const vacio = category.products.find((p) => p.id === "empanada-vacio");
+    if (vacio) {
+      if (vacio.name === "Empanada de Vacío braseado al vino tinto") vacio.name = "Empanada de Vacío especial de autor";
+      if (vacio.description === "Empanada gourmet de vacío braseado al vino tinto.") {
+        vacio.description = "Empanada gourmet de vacío especial de autor.";
+      }
+    }
+    const docena = category.products.find((p) => p.id === "empanada-docena");
+    category.products = category.products.filter((p) => p.id !== "empanada-docena");
+    if (!category.bundle) {
+      category.bundle = { enabled: true, size: 12, price: docena && Number(docena.price) > 0 ? Number(docena.price) : 33000 };
+    }
+  }
+  c.menuVersion = 3;
+  return c;
+}
+
 // Ajustes que no son del menú y se conservan al reemplazar el menú guardado.
 function migrateCatalog(stored) {
+  if (stored && stored.menuVersion === 2) return patchToV3(stored);
   const fresh = defaultCatalog();
   if (!stored) return fresh;
 

@@ -86,6 +86,8 @@ exports.handler = async (event) => {
       payment,
       items: priced.items,
       subtotal: priced.subtotal,
+      discount: priced.discount,
+      discountGroups: priced.discountGroups,
       deliveryFee: priced.deliveryFee,
       total: priced.total,
       eta: Rules.prepEstimate(catalog, shipping)
@@ -100,6 +102,8 @@ exports.handler = async (event) => {
         orderId: id,
         number,
         subtotal: order.subtotal,
+        discount: order.discount,
+        discountGroups: order.discountGroups,
         deliveryFee: order.deliveryFee,
         total: order.total,
         eta: order.eta

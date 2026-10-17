@@ -792,3 +792,23 @@ a.btn { text-decoration: none; }
 .close-row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px dashed var(--line); font-size: 14px; }
 .close-sub { margin: 14px 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); }
 .kpis-inner { margin: 10px 0; }
+
+/* ---------- Promo por cantidad (categorías) ---------- */
+.bundle-row { padding: 10px 12px; margin-bottom: 12px; border: 1.5px dashed var(--line); border-radius: 12px; }
+.bundle-fields { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; font-weight: 700; color: var(--muted); }
+.bundle-fields input {
+  width: 92px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1.5px solid var(--line);
+  font-size: 16px;
+  font-family: inherit;
+  background: #fff;
+}
+.bundle-fields input:focus { outline: none; border-color: var(--rojo); }
+.bundle-row .hint { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
+
+/* En celulares angostos el nombre de la categoría no se corta: los botones bajan a otra fila */
+.cat-head { flex-wrap: wrap; }
+.cat-name { flex: 1 1 130px; }
+.cat-tools { margin-left: auto; }
