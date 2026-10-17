@@ -2096,13 +2096,10 @@ body.has-cart .toast {
 
 .hero-poster-img {
   display: block;
-  width: 90%;
+  width: 100%;
   height: auto;
-  margin: 0 auto;
-  aspect-ratio: 994 / 1399;
+  aspect-ratio: 864 / 1280;
   object-fit: cover;
-  /* El póster se muestra un poco más chico para que la carne no quede cortada. Los bordes
-     difuminados ya vienen dentro de la imagen (se evita una máscara que se recalcula en cada scroll). */
 }
 
 .hero-poster::after {
@@ -2630,3 +2627,14 @@ body.ready .hero-poster-img {
 .cart-promo { margin-top: 10px; padding: 10px 12px; border-radius: 12px; font-size: 14px; font-weight: 700; }
 .cart-promo.ok { display: flex; justify-content: space-between; background: rgba(46, 189, 107, 0.16); color: #7be0a6; }
 .cart-promo.hint { background: rgba(255, 193, 7, 0.12); color: var(--dorado); }
+
+/* Opciones con foto (por ejemplo, el tipo de pan) */
+.variant-option.has-photo { padding: 6px 10px 6px 6px; }
+.variant-thumb {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #2a2a2a;
+}

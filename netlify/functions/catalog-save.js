@@ -111,6 +111,15 @@ function validateCatalog(catalog) {
         if (!isNonEmptyString(variant.id) || !isNonEmptyString(variant.name)) {
           return `Una variante de ${product.name} no tiene id/nombre`;
         }
+        if (variant.optionImages !== undefined) {
+          const images = variant.optionImages;
+          if (!images || typeof images !== "object" || Array.isArray(images)) {
+            return `Las fotos de las opciones de ${variant.name} son inválidas`;
+          }
+          for (const value of Object.values(images)) {
+            if (typeof value !== "string" || value.length > 300) return `Las fotos de las opciones de ${variant.name} son inválidas`;
+          }
+        }
         if (!Array.isArray(variant.options) || variant.options.length === 0) {
           return `La variante ${variant.name} de ${product.name} necesita opciones`;
         }

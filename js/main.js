@@ -434,11 +434,13 @@
           .map((opt, idx) => {
             const inputId = `variant-${variant.id}-${idx}`;
             const checkedFirst = !variant.multiple && idx === 0 ? "checked" : "";
+            const photo = variant.optionImages && variant.optionImages[opt];
             return `
-              <label class="variant-option" for="${inputId}">
+              <label class="variant-option${photo ? " has-photo" : ""}" for="${inputId}">
                 <input type="${inputType}" id="${inputId}" name="variant-${variant.id}"
                   value="${escapeHtml(opt)}" data-variant-id="${variant.id}" data-variant-name="${escapeHtml(variant.name)}"
                   ${checkedFirst} />
+                ${photo ? `<img class="variant-thumb" src="${escapeHtml(photo)}" alt="" width="56" height="56" loading="lazy" decoding="async" />` : ""}
                 <span>${escapeHtml(opt)}</span>
               </label>
             `;

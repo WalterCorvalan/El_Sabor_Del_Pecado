@@ -29,13 +29,21 @@ function guarnicionVariant() {
   };
 }
 
+// Foto de cada pan, para mostrarla en las opciones del sándwich.
+const PAN_IMAGES = {
+  "Francés": "images/pan/frances.webp",
+  "Criollo": "images/pan/criollo.webp",
+  "Ciabatta": "images/pan/ciabatta.webp"
+};
+
 function panVariant() {
   return {
     id: "pan",
     name: "Tipo de pan",
     multiple: false,
     required: true,
-    options: ["Francés", "Criollo", "Ciabatta"]
+    options: ["Francés", "Criollo", "Ciabatta"],
+    optionImages: PAN_IMAGES
   };
 }
 
@@ -66,7 +74,7 @@ function sandwichExtras() {
 // se guardó antes de que existieran las fotos y los precios actuales), catalog-get lo reemplaza
 // UNA vez por el menú inicial, conservando los ajustes (WhatsApp, horarios, envío, etc.).
 // Subir este número a propósito pisa los cambios hechos en el admin: solo hacerlo si se quiere eso.
-const MENU_VERSION = 3;
+const MENU_VERSION = 4;
 
 function defaultCatalog() {
   return {
@@ -303,9 +311,27 @@ function patchToV3(stored) {
   return c;
 }
 
+// Versión 3 -> 4: las opciones de pan de los sándwiches pasan a mostrar su foto.
+function patchToV4(stored) {
+  const c = JSON.parse(JSON.stringify(stored));
+  for (const category of c.categories || []) {
+    for (const product of category.products || []) {
+      for (const variant of product.variants || []) {
+        if (variant.id !== "pan" || variant.optionImages) continue;
+        const images = {};
+        for (const option of variant.options || []) if (PAN_IMAGES[option]) images[option] = PAN_IMAGES[option];
+        if (Object.keys(images).length) variant.optionImages = images;
+      }
+    }
+  }
+  c.menuVersion = 4;
+  return c;
+}
+
 // Ajustes que no son del menú y se conservan al reemplazar el menú guardado.
 function migrateCatalog(stored) {
-  if (stored && stored.menuVersion === 2) return patchToV3(stored);
+  if (stored && stored.menuVersion === 2) return patchToV4(patchToV3(stored));
+  if (stored && stored.menuVersion === 3) return patchToV4(stored);
   const fresh = defaultCatalog();
   if (!stored) return fresh;
 
