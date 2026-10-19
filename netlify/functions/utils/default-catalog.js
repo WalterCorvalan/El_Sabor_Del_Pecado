@@ -65,12 +65,12 @@ function product(id, name, description, image, variants = [], price = 0, extras 
 // se guardó antes de que existieran las fotos y los precios actuales), catalog-get lo reemplaza
 // UNA vez por el menú inicial, conservando los ajustes (WhatsApp, horarios, envío, etc.).
 // Subir este número a propósito pisa los cambios hechos en el admin: solo hacerlo si se quiere eso.
-const MENU_VERSION = 6;
+const MENU_VERSION = 7;
 
 function defaultCatalog() {
   return {
     menuVersion: MENU_VERSION,
-    whatsappNumber: "5491139033797",
+    whatsappNumber: "5491159937311",
     prepTime: { pickup: "20-30", delivery: "40-50" },
     // Ajustes de entrega y pago. Todo apagado hasta que el dueño lo active desde el admin.
     pickup: { enabled: false },
@@ -347,6 +347,14 @@ function patchToV6(stored) {
   return c;
 }
 
+// Versión 6 -> 7: el WhatsApp que recibe los pedidos pasa al número del negocio.
+function patchToV7(stored) {
+  const c = JSON.parse(JSON.stringify(stored));
+  c.whatsappNumber = "5491159937311";
+  c.menuVersion = 7;
+  return c;
+}
+
 // Ajustes que no son del menú y se conservan al reemplazar el menú guardado.
 function migrateCatalog(stored) {
   if (stored && stored.menuVersion >= 2 && stored.menuVersion < MENU_VERSION) {
@@ -355,6 +363,7 @@ function migrateCatalog(stored) {
     if (c.menuVersion === 3) c = patchToV4(c);
     if (c.menuVersion === 4) c = patchToV5(c);
     if (c.menuVersion === 5) c = patchToV6(c);
+    if (c.menuVersion === 6) c = patchToV7(c);
     return c;
   }
   const fresh = defaultCatalog();
