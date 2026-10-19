@@ -63,6 +63,10 @@
     deliveryZone: document.getElementById("deliveryZone"),
     deliveryHint: document.getElementById("deliveryHint"),
     pickupHint: document.getElementById("pickupHint"),
+    shippingField: document.getElementById("shippingField"),
+    resumenShippingTitle: document.getElementById("resumenShippingTitle"),
+    paymentMp: document.getElementById("paymentMp"),
+    paymentResultCopy: document.getElementById("paymentResultCopy"),
     trackBar: document.getElementById("trackBar"),
     trackLink: document.getElementById("trackLink"),
     trackText: document.getElementById("trackText"),
@@ -115,7 +119,7 @@
   };
 
   let selectedPayment = "Efectivo";
-  let selectedShipping = "Retiro en local";
+  let selectedShipping = Rules.DELIVERY;
   let currentProductContext = null; // { category, product, qty }
 
   function money(n) {
@@ -137,6 +141,69 @@
       "'": "&#39;"
     }[c]));
   }
+
+  // ---------------- Botón "atrás" ----------------
+  // Mientras haya una hoja, el carrito, el menú lateral o una foto abiertos, el botón atrás del
+  // celular o del navegador los cierra en vez de salir de la página. Se mantiene una sola
+  // entrada en el historial mientras algo esté abierto.
+  let overlayEntry = false;
+  let suppressPop = false;
+
+  function anyOverlayOpen() {
+    return !!document.querySelector(".modal-backdrop.open, .side-nav.open, .lightbox.open");
+  }
+
+  function syncOverlayHistory() {
+    const open = anyOverlayOpen();
+    if (open && !overlayEntry) {
+      history.pushState({ esdpOverlay: true }, "");
+      overlayEntry = true;
+    } else if (!open && overlayEntry) {
+      overlayEntry = false;
+      suppressPop = true;
+      history.back();
+    }
+  }
+
+  window.addEventListener("popstate", () => {
+    if (suppressPop) {
+      suppressPop = false;
+      return;
+    }
+    if (!overlayEntry) return;
+
+    // Una foto ampliada sobre una hoja: el primer "atrás" cierra solo la foto.
+    if (window.Lightbox && document.querySelector(".lightbox.open")) {
+      window.Lightbox.close();
+      if (document.querySelector(".modal-backdrop.open, .side-nav.open")) {
+        history.pushState({ esdpOverlay: true }, "");
+        return;
+      }
+    }
+
+    overlayEntry = false;
+    closeAllModals();
+    closeSideNav();
+  });
+
+  (function watchOverlays() {
+    const classOnly = { attributes: true, attributeFilter: ["class"] };
+    const observer = new MutationObserver(syncOverlayHistory);
+    document.querySelectorAll(".modal-backdrop").forEach((node) => observer.observe(node, classOnly));
+    const side = document.getElementById("sideNav");
+    if (side) observer.observe(side, classOnly);
+    // el visor de fotos se crea la primera vez que se abre una foto
+    new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        m.addedNodes.forEach((node) => {
+          if (node.classList && node.classList.contains("lightbox")) {
+            observer.observe(node, classOnly);
+            syncOverlayHistory();
+          }
+        });
+      }
+    }).observe(document.body, { childList: true });
+  })();
 
   // ---------------- Navegación / menú ----------------
   function openSideNav() {
@@ -440,7 +507,7 @@
                 <input type="${inputType}" id="${inputId}" name="variant-${variant.id}"
                   value="${escapeHtml(opt)}" data-variant-id="${variant.id}" data-variant-name="${escapeHtml(variant.name)}"
                   ${checkedFirst} />
-                ${photo ? `<img class="variant-thumb" src="${escapeHtml(photo)}" alt="" width="56" height="56" loading="lazy" decoding="async" />` : ""}
+                ${photo ? `<img class="variant-thumb" src="${escapeHtml(photo)}" data-full="${escapeHtml(photo.replace(".webp", "-full.webp"))}" data-label="${escapeHtml(opt)}" alt="${escapeHtml(opt)}" width="64" height="64" loading="lazy" decoding="async" />` : ""}
                 <span>${escapeHtml(opt)}</span>
               </label>
             `;
@@ -449,7 +516,7 @@
 
         return `
           <div class="variant-group">
-            <h4>${escapeHtml(variant.name)} ${variant.required ? "" : "<small>(opcional)</small>"}</h4>
+            <h4>${escapeHtml(variant.name)} ${variant.required ? "" : "<small>(opcional)</small>"}${variant.optionImages ? " <small>Tocá la foto para verla grande</small>" : ""}</h4>
             ${options}
           </div>
         `;
@@ -493,10 +560,6 @@
           <button type="button" id="modalQtyPlus">+</button>
         </div>
       </div>
-      <div class="variant-group">
-        <h4>Observaciones <small>(opcional)</small></h4>
-        <textarea id="modalNotes" rows="2" placeholder="Ej: sin tomate, bien cocido, etc." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:var(--negro);color:var(--blanco);font-size:14px;font-family:inherit;"></textarea>
-      </div>
     `;
 
     const modalPhoto = el.productModalBody.querySelector(".modal-photo");
@@ -521,6 +584,15 @@
   }
 
   el.productModalClose.addEventListener("click", () => el.productModalBackdrop.classList.remove("open"));
+
+  // Tocar la foto de una opción (por ejemplo, el pan) la abre en grande sin elegir la opción.
+  el.productModalBody.addEventListener("click", (e) => {
+    const thumb = e.target.closest(".variant-thumb");
+    if (!thumb) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openPhoto(thumb.dataset.full || thumb.src, thumb.dataset.label || "");
+  });
 
   el.productModalConfirm.addEventListener("click", () => {
     if (!currentProductContext) return;
@@ -888,7 +960,26 @@
       cfg.zones
         .map((z) => `<option value="${escapeHtml(z.id)}">${escapeHtml(z.name)} — ${money(z.fee)}</option>`)
         .join("");
+    applyCheckoutSettings();
     updateDeliveryUi();
+  }
+
+  // Sin retiro en local: no se pregunta el método de entrega, siempre es delivery. Mercado Pago
+  // solo aparece si el dueño lo activó.
+  function applyCheckoutSettings() {
+    const s = Rules.settings(state.catalog);
+    el.shippingField.classList.toggle("hidden", !s.pickupEnabled);
+    if (!s.pickupEnabled) {
+      selectedShipping = Rules.DELIVERY;
+      document.querySelectorAll(".shipping-option").forEach((b) => b.classList.toggle("selected", b.dataset.shipping === Rules.DELIVERY));
+      el.deliveryAddressField.classList.remove("hidden");
+    }
+    el.resumenShippingTitle.textContent = s.pickupEnabled ? "Método de entrega" : "Dirección de entrega";
+    el.paymentMp.classList.toggle("hidden", !s.mercadopagoEnabled);
+    if (!s.mercadopagoEnabled && selectedPayment === "Mercado Pago") {
+      selectedPayment = "Efectivo";
+      document.querySelectorAll(".payment-option").forEach((b) => b.classList.toggle("selected", b.dataset.payment === "Efectivo"));
+    }
   }
 
   function updateDeliveryUi() {
@@ -966,7 +1057,8 @@
     try {
       last = JSON.parse(localStorage.getItem(LAST_ORDER_KEY));
     } catch (_) {}
-    const fresh = last && last.id && Date.now() - last.at < LAST_ORDER_HOURS * 60 * 60 * 1000;
+    const enabled = Rules.settings(state.catalog).trackingEnabled;
+    const fresh = enabled && last && last.id && Date.now() - last.at < LAST_ORDER_HOURS * 60 * 60 * 1000;
     el.trackBar.classList.toggle("hidden", !fresh);
     if (!fresh) return;
     el.trackLink.href = `seguimiento.html?o=${encodeURIComponent(last.id)}`;
@@ -1006,10 +1098,11 @@
     el.customerEmail.value = saved.email || "";
     el.deliveryAddress.value = saved.address || "";
     if (saved.zoneId) el.deliveryZone.value = saved.zoneId;
-    if (saved.payment) {
+    const s = Rules.settings(state.catalog);
+    if (saved.payment && (saved.payment !== "Mercado Pago" || s.mercadopagoEnabled)) {
       document.querySelector(`.payment-option[data-payment="${saved.payment}"]`)?.click();
     }
-    if (saved.shipping) {
+    if (saved.shipping && s.pickupEnabled) {
       document.querySelector(`.shipping-option[data-shipping="${saved.shipping}"]`)?.click();
     }
     el.forgetData.classList.remove("hidden");
@@ -1042,7 +1135,7 @@
     (contact.promos || []).forEach((g) => {
       lines.push(`- Promo ${g.size === 12 ? "docena" : "pack de " + g.size} ${g.name}${g.packs > 1 ? " x" + g.packs : ""} — -${money(g.saved)}`);
     });
-    if (shipping === Rules.DELIVERY && deliveryFee !== undefined) {
+    if (shipping === Rules.DELIVERY && deliveryFee !== undefined && Rules.deliveryConfig(state.catalog).enabled) {
       lines.push(`- Envío${zoneName ? ` (${zoneName})` : ""} — ${deliveryFee > 0 ? money(deliveryFee) : "Gratis"}`);
     }
     lines.push("");
@@ -1124,7 +1217,7 @@
     `;
 
     el.resumenShipping.innerHTML = `
-      <div>${escapeHtml(selectedShipping)}</div>
+      ${Rules.settings(state.catalog).pickupEnabled ? `<div>${escapeHtml(selectedShipping)}</div>` : ""}
       ${selectedShipping === Rules.DELIVERY && orderTotals().zone ? `<div>Zona: ${escapeHtml(orderTotals().zone.name)}</div>` : ""}
       ${selectedShipping === Rules.DELIVERY ? `<div>${escapeHtml(address)}</div>` : ""}
     `;
@@ -1141,6 +1234,44 @@
       el.checkoutModalBackdrop.classList.add("open");
     });
   });
+
+  // Después de confirmar un pedido por transferencia: se muestra el alias y el monto, y el
+  // pedido sale por WhatsApp junto con el aviso de que el comprobante va en ese mismo chat.
+  function showTransferScreen(contact, total) {
+    const s = Rules.settings(state.catalog);
+    const message = buildOrderMessage(
+      state.cart,
+      total,
+      contact,
+      "Transferencia",
+      "💸 *Pago por transferencia.* Te mando el comprobante en este chat ⬇️"
+    );
+
+    el.paymentResultTitle.textContent = "Pagá por transferencia";
+    const rows = [`<div>Total a transferir: <strong>${money(total)}</strong></div>`];
+    if (s.transferAlias) rows.push(`<div>Alias: <strong>${escapeHtml(s.transferAlias)}</strong></div>`);
+    if (s.transferHolder) rows.push(`<div>Titular: ${escapeHtml(s.transferHolder)}</div>`);
+    el.paymentResultSummary.innerHTML = rows.join("");
+    el.paymentResultMessage.textContent = s.transferAlias
+      ? "Hacé la transferencia y después tocá el botón: se abre WhatsApp con tu pedido. Adjuntá el comprobante en ese mismo chat."
+      : "Tocá el botón para enviarnos el pedido por WhatsApp. Ahí te pasamos los datos para transferir.";
+    el.paymentResultWhatsapp.textContent = "Enviar pedido por WhatsApp";
+    el.paymentResultWhatsapp.onclick = () => {
+      openWhatsappWithMessage(message);
+      el.paymentResultModalBackdrop.classList.remove("open");
+    };
+
+    el.paymentResultCopy.classList.toggle("hidden", !s.transferAlias);
+    el.paymentResultCopy.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(s.transferAlias);
+        showToast("Alias copiado");
+      } catch (_) {
+        showToast("No se pudo copiar, escribilo a mano");
+      }
+    };
+    el.paymentResultModalBackdrop.classList.add("open");
+  }
 
   function resetConfirmButton() {
     el.confirmResumen.disabled = false;
@@ -1210,12 +1341,13 @@
     const saved = result.saved || null;
     // Con el pedido guardado se usan los montos del servidor.
     contact.number = saved ? saved.number : undefined;
-    contact.orderId = saved ? saved.orderId : undefined;
+    // El link de seguimiento solo se manda si el dueño lo activó.
+    contact.orderId = saved && Rules.settings(state.catalog).trackingEnabled ? saved.orderId : undefined;
     contact.eta = saved ? saved.eta : undefined;
     contact.promos = saved
       ? saved.discountGroups || []
       : cartPricing().groups.filter((g) => g.saved > 0);
-    if (saved) rememberLastOrder(saved);
+    if (saved && Rules.settings(state.catalog).trackingEnabled) rememberLastOrder(saved);
     contact.deliveryFee = saved ? saved.deliveryFee : totals.fee;
     contact.zoneName = totals.zone ? totals.zone.name : "";
     const total = saved ? saved.total : totals.total;
@@ -1229,6 +1361,18 @@
       zoneId: el.deliveryZone.value,
       payment: selectedPayment
     });
+
+    if (selectedPayment === "Transferencia") {
+      showTransferScreen(contact, total);
+      resetConfirmButton();
+      el.resumenModalBackdrop.classList.remove("open");
+      if (saved) {
+        state.cart = [];
+        renderCartBadge();
+        renderCartModal();
+      }
+      return;
+    }
 
     if (selectedPayment === "Mercado Pago") {
       try {

@@ -2638,3 +2638,25 @@ body.ready .hero-poster-img {
   object-fit: cover;
   background: #2a2a2a;
 }
+
+/* Fotos de opciones más grandes y tocables */
+.variant-option.has-photo { padding: 6px 12px 6px 6px; }
+.variant-thumb {
+  width: 64px;
+  height: 64px;
+  cursor: zoom-in;
+}
+.variant-group h4 small { font-weight: 600; color: #a99e94; text-transform: none; letter-spacing: 0; }
+
+.btn-copy {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 193, 7, 0.5);
+  background: transparent;
+  color: var(--dorado);
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+}

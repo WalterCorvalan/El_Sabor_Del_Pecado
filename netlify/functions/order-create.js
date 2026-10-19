@@ -57,6 +57,10 @@ exports.handler = async (event) => {
     return fail(500, "No se pudo preparar el pedido");
   }
 
+  const settings = Rules.settings(catalog);
+  if (shipping !== Rules.DELIVERY && !settings.pickupEnabled) return fail(400, "Por ahora solo hacemos envíos a domicilio");
+  if (payment === "Mercado Pago" && !settings.mercadopagoEnabled) return fail(400, "Mercado Pago no está disponible por ahora");
+
   const status = Rules.storeStatus(catalog);
   if (!status.open) {
     const message =
@@ -89,6 +93,7 @@ exports.handler = async (event) => {
       discount: priced.discount,
       discountGroups: priced.discountGroups,
       deliveryFee: priced.deliveryFee,
+      deliveryEnabled: priced.deliveryEnabled,
       total: priced.total,
       eta: Rules.prepEstimate(catalog, shipping)
     };

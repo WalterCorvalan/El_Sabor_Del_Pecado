@@ -46,6 +46,23 @@ function validateDelivery(delivery) {
   return null;
 }
 
+function validateCheckoutSettings(catalog) {
+  if (catalog.pickup !== undefined && (!catalog.pickup || typeof catalog.pickup.enabled !== "boolean")) {
+    return "El ajuste de retiro en local es inválido";
+  }
+  if (catalog.trackingEnabled !== undefined && typeof catalog.trackingEnabled !== "boolean") {
+    return "El ajuste de seguimiento es inválido";
+  }
+  if (catalog.payment !== undefined) {
+    const p = catalog.payment;
+    if (!p || typeof p !== "object") return "Los datos de pago son inválidos";
+    if (typeof p.transferAlias !== "string" || p.transferAlias.length > 60) return "El alias es inválido";
+    if (typeof p.transferHolder !== "string" || p.transferHolder.length > 80) return "El titular de la cuenta es inválido";
+    if (typeof p.mercadopagoEnabled !== "boolean") return "El ajuste de Mercado Pago es inválido";
+  }
+  return null;
+}
+
 function validatePrepTime(prepTime) {
   if (prepTime === undefined) return null;
   if (!prepTime || typeof prepTime !== "object") return "El tiempo estimado es inválido";
@@ -68,7 +85,10 @@ function validateCatalog(catalog) {
   if (catalog.closedMessage !== undefined && typeof catalog.closedMessage !== "string") return "El mensaje de local cerrado es inválido";
 
   const settingsError =
-    validateSchedule(catalog.schedule) || validateDelivery(catalog.delivery) || validatePrepTime(catalog.prepTime);
+    validateSchedule(catalog.schedule) ||
+    validateDelivery(catalog.delivery) ||
+    validatePrepTime(catalog.prepTime) ||
+    validateCheckoutSettings(catalog);
   if (settingsError) return settingsError;
 
   for (const category of catalog.categories) {

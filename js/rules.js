@@ -27,6 +27,20 @@
     return { day: d.getUTCDay(), minutes: d.getUTCHours() * 60 + d.getUTCMinutes() };
   }
 
+  // ---------------- Ajustes de entrega y pago ----------------
+  // Siempre devuelve valores completos: lo que falta en el catálogo se toma como "apagado".
+  function settings(catalog) {
+    const cat = catalog || {};
+    const payment = cat.payment || {};
+    return {
+      pickupEnabled: !!(cat.pickup && cat.pickup.enabled),
+      trackingEnabled: cat.trackingEnabled === true,
+      transferAlias: typeof payment.transferAlias === "string" ? payment.transferAlias.trim() : "",
+      transferHolder: typeof payment.transferHolder === "string" ? payment.transferHolder.trim() : "",
+      mercadopagoEnabled: payment.mercadopagoEnabled === true
+    };
+  }
+
   // ---------------- Horarios ----------------
   // catalog.schedule = { enabled, days: [{ open, from, to } x7] } (0 = domingo).
   // Si "to" es menor o igual que "from", el horario pasa de medianoche (ej. 20:00 a 01:00).
@@ -262,8 +276,10 @@
 
     let fee = 0;
     let zone = null;
+    let deliveryEnabled = false;
     if (opts && opts.shipping === DELIVERY) {
       const result = deliveryFee(catalog, net, opts.zoneId);
+      deliveryEnabled = result.enabled;
       if (result.needsZone) return { ok: false, error: "Elegí tu zona de entrega" };
       fee = result.fee;
       zone = result.zone ? { id: result.zone.id, name: result.zone.name } : null;
@@ -276,6 +292,7 @@
       discount: bundle.discount,
       discountGroups,
       deliveryFee: fee,
+      deliveryEnabled,
       zone,
       total: net + fee
     };
@@ -284,6 +301,7 @@
   return {
     DELIVERY,
     DAY_NAMES,
+    settings,
     toMinutes,
     storeStatus,
     deliveryConfig,

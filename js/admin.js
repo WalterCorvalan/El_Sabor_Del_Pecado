@@ -432,6 +432,8 @@
         </div>
       </div>
 
+      ${checkoutCardHtml()}
+
       ${prepCardHtml()}
 
       ${scheduleCardHtml()}
@@ -1430,6 +1432,72 @@
         toast("Error de conexión", "error");
         btn.disabled = false;
       }
+    }
+  });
+
+  // ---------------- Entrega y pagos (ajustes) ----------------
+  function ensurePayment() {
+    if (!catalog.payment) catalog.payment = { transferAlias: "", transferHolder: "", mercadopagoEnabled: false };
+    return catalog.payment;
+  }
+
+  function checkoutCardHtml() {
+    const pickup = !!(catalog.pickup && catalog.pickup.enabled);
+    const tracking = catalog.trackingEnabled === true;
+    const payment = catalog.payment || { transferAlias: "", transferHolder: "", mercadopagoEnabled: false };
+    return `
+      <div class="card">
+        <h2>Entrega y pagos</h2>
+
+        <div class="field">
+          <label class="switch"><input type="checkbox" id="pickupEnabled" ${pickup ? "checked" : ""} /><span class="slider"></span> <span>Permitir retiro en el local</span></label>
+          <p class="hint">Apagado: el cliente no elige cómo recibir el pedido, siempre es envío a domicilio.</p>
+        </div>
+
+        <div class="field">
+          <label class="switch"><input type="checkbox" id="trackingEnabled" ${tracking ? "checked" : ""} /><span class="slider"></span> <span>Mostrar el seguimiento del pedido</span></label>
+          <p class="hint">Apagado: el cliente no recibe el link de seguimiento ni ve la barra "Seguí tu pedido".</p>
+        </div>
+
+        <div class="field">
+          <label for="transferAlias">Alias para transferencias</label>
+          <input type="text" id="transferAlias" maxlength="60" value="${esc(payment.transferAlias)}" placeholder="Ej: elsabor.pecado" />
+        </div>
+        <div class="field">
+          <label for="transferHolder">Titular de la cuenta (opcional)</label>
+          <input type="text" id="transferHolder" maxlength="80" value="${esc(payment.transferHolder)}" />
+          <p class="hint">Cuando el cliente elige Transferencia, ve el monto y este alias, y el pedido sale por WhatsApp para que adjunte el comprobante.</p>
+        </div>
+
+        <div class="field">
+          <label class="switch"><input type="checkbox" id="mpEnabled" ${payment.mercadopagoEnabled ? "checked" : ""} /><span class="slider"></span> <span>Mostrar Mercado Pago</span></label>
+          <p class="hint">Activalo solo cuando Mercado Pago esté conectado (variable <strong>MERCADOPAGO_ACCESS_TOKEN</strong> en Vercel). Si no, el pago falla.</p>
+        </div>
+      </div>`;
+  }
+
+  el.tabAjustes.addEventListener("change", (e) => {
+    const t = e.target;
+    if (t.id === "pickupEnabled") {
+      catalog.pickup = { enabled: t.checked };
+      markDirty();
+    } else if (t.id === "trackingEnabled") {
+      catalog.trackingEnabled = t.checked;
+      markDirty();
+    } else if (t.id === "mpEnabled") {
+      ensurePayment().mercadopagoEnabled = t.checked;
+      markDirty();
+    }
+  });
+
+  el.tabAjustes.addEventListener("input", (e) => {
+    const t = e.target;
+    if (t.id === "transferAlias") {
+      ensurePayment().transferAlias = t.value.trim();
+      markDirty();
+    } else if (t.id === "transferHolder") {
+      ensurePayment().transferHolder = t.value.trim();
+      markDirty();
     }
   });
 

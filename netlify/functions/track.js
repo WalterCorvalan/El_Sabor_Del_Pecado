@@ -1,4 +1,6 @@
-const { getOrderStore } = require("./utils/blob-store");
+const { getOrderStore, getCatalogStore } = require("./utils/blob-store");
+const { defaultCatalog } = require("./utils/default-catalog");
+const Rules = require("../../js/rules.js");
 const { requireAdmin } = require("./utils/auth");
 
 // Tres usos en una sola función (Vercel gratis permite 12 funciones en total):
@@ -44,6 +46,8 @@ function json(statusCode, body, extraHeaders) {
 
 async function orderStatus(id) {
   if (!ORDER_ID.test(id)) return json(400, { error: "Pedido inválido" });
+  const catalog = (await getCatalogStore().get("catalog", { type: "json" })) || defaultCatalog();
+  if (!Rules.settings(catalog).trackingEnabled) return json(404, { error: "El seguimiento no está disponible" });
   const order = await getOrderStore().get(id);
   if (!order) return json(404, { error: "No encontramos ese pedido" });
   // Solo datos que no son personales: el link lo puede ver quien tenga el pedido a mano.

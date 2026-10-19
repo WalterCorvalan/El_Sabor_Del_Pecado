@@ -61,26 +61,21 @@ function product(id, name, description, image, variants = [], price = 0, extras 
   return { id, name, description, price, image, variants, extras };
 }
 
-function sandwichExtras() {
-  return [
-    { id: "extra-panceta", name: "Panceta extra", price: 800 },
-    { id: "extra-doble-queso", name: "Doble queso", price: 600 },
-    { id: "extra-huevo", name: "Huevo", price: 500 },
-    { id: "extra-salsa-especial", name: "Salsa especial", price: 300 }
-  ];
-}
-
 // Versión del menú inicial. Si el menú guardado tiene otra versión (por ejemplo, uno viejo que
 // se guardó antes de que existieran las fotos y los precios actuales), catalog-get lo reemplaza
 // UNA vez por el menú inicial, conservando los ajustes (WhatsApp, horarios, envío, etc.).
 // Subir este número a propósito pisa los cambios hechos en el admin: solo hacerlo si se quiere eso.
-const MENU_VERSION = 4;
+const MENU_VERSION = 5;
 
 function defaultCatalog() {
   return {
     menuVersion: MENU_VERSION,
     whatsappNumber: "5493856865979",
     prepTime: { pickup: "20-30", delivery: "40-50" },
+    // Ajustes de entrega y pago. Todo apagado hasta que el dueño lo active desde el admin.
+    pickup: { enabled: false },
+    trackingEnabled: false,
+    payment: { transferAlias: "", transferHolder: "", mercadopagoEnabled: false },
     categories: [
       {
         id: "sandwiches",
@@ -92,8 +87,7 @@ function defaultCatalog() {
             "Vacío de ternera horneado a lenta cocción en reducción de vino tinto desmechado con hortalizas de estación y hierbas aromáticas, y lluvia de queso provolone.",
             "images/menu/sandwich-vacio.webp",
             [panVariant()],
-            22000,
-            sandwichExtras()
+            22000
           ),
           product(
             "sandwich-pollo-funghi",
@@ -101,7 +95,7 @@ function defaultCatalog() {
             "Pechugas de pollo doradas y desmechadas en salsa de champiñones, portobellos, verdeo, manteca y crema.",
             "images/menu/sandwich-pollo-funghi.webp",
             [panVariant()],
-            20000
+            22000
           ),
           product(
             "sandwich-bondiola-barbacoa",
@@ -109,7 +103,7 @@ function defaultCatalog() {
             "Bondiola marinada y cocida en reducción de cerveza negra, ajo, salsa barbacoa y rub seco de pimentón.",
             "images/menu/sandwich-bondiola-barbacoa.webp",
             [panVariant()],
-            18000
+            22000
           ),
           product(
             "sandwich-osobuco-malbec",
@@ -117,7 +111,7 @@ function defaultCatalog() {
             "Osobuco al disco cocido en vino Malbec, entre cebollas, zanahoria, ajo, apio, pimentón y caldo de verduras, desmechado.",
             "images/menu/sandwich-osobuco-malbec.webp",
             [panVariant()],
-            20000
+            22000
           ),
           product(
             "sandwich-bondiola-honey-mustard",
@@ -125,7 +119,7 @@ function defaultCatalog() {
             "Bondiola cocida a baja temperatura durante varias horas con cebollas caramelizadas, mostaza, miel y finas hierbas.",
             "images/menu/sandwich-bondiola-honey-mustard.webp",
             [panVariant()],
-            18000
+            22000
           )
         ]
       },
@@ -328,10 +322,32 @@ function patchToV4(stored) {
   return c;
 }
 
+// Versión 4 -> 5: sándwiches a $22.000 y sin extras; se agregan los ajustes de entrega y pago.
+function patchToV5(stored) {
+  const c = JSON.parse(JSON.stringify(stored));
+  const sandwiches = (c.categories || []).find((x) => x.id === "sandwiches");
+  if (sandwiches) {
+    for (const p of sandwiches.products || []) {
+      p.price = 22000;
+      p.extras = [];
+    }
+  }
+  if (!c.pickup) c.pickup = { enabled: false };
+  if (typeof c.trackingEnabled !== "boolean") c.trackingEnabled = false;
+  if (!c.payment) c.payment = { transferAlias: "", transferHolder: "", mercadopagoEnabled: false };
+  c.menuVersion = 5;
+  return c;
+}
+
 // Ajustes que no son del menú y se conservan al reemplazar el menú guardado.
 function migrateCatalog(stored) {
-  if (stored && stored.menuVersion === 2) return patchToV4(patchToV3(stored));
-  if (stored && stored.menuVersion === 3) return patchToV4(stored);
+  if (stored && stored.menuVersion >= 2 && stored.menuVersion < MENU_VERSION) {
+    let c = stored;
+    if (c.menuVersion === 2) c = patchToV3(c);
+    if (c.menuVersion === 3) c = patchToV4(c);
+    if (c.menuVersion === 4) c = patchToV5(c);
+    return c;
+  }
   const fresh = defaultCatalog();
   if (!stored) return fresh;
 
@@ -345,6 +361,9 @@ function migrateCatalog(stored) {
   if (stored.schedule) fresh.schedule = stored.schedule;
   if (stored.delivery) fresh.delivery = stored.delivery;
   if (stored.prepTime) fresh.prepTime = stored.prepTime;
+  if (stored.pickup) fresh.pickup = stored.pickup;
+  if (typeof stored.trackingEnabled === "boolean") fresh.trackingEnabled = stored.trackingEnabled;
+  if (stored.payment) fresh.payment = stored.payment;
   return fresh;
 }
 

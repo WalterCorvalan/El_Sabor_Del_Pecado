@@ -173,7 +173,7 @@
 
       <button type="button" class="forget-link hidden" id="forgetData">Olvidar mis datos guardados en este celular</button>
 
-      <div class="field">
+      <div class="field" id="shippingField">
         <label>Método de entrega</label>
         <div class="shipping-options">
           <button type="button" class="shipping-option selected" data-shipping="Retiro en local">
@@ -208,7 +208,7 @@
         <div class="payment-options">
           <button type="button" class="payment-option selected" data-payment="Efectivo">Efectivo</button>
           <button type="button" class="payment-option" data-payment="Transferencia">Transferencia</button>
-          <button type="button" class="payment-option" data-payment="Mercado Pago">Mercado Pago</button>
+          <button type="button" class="payment-option hidden" id="paymentMp" data-payment="Mercado Pago">Mercado Pago</button>
         </div>
       </div>
 
@@ -248,7 +248,7 @@
 
       <div class="resumen-block">
         <div class="resumen-block-header">
-          <span class="resumen-block-title">Método de entrega</span>
+          <span class="resumen-block-title" id="resumenShippingTitle">Método de entrega</span>
           <button type="button" class="resumen-edit" data-edit-step="envio">Cambiar</button>
         </div>
         <div class="resumen-contact" id="resumenShipping"></div>
@@ -276,6 +276,7 @@
       </div>
       <div class="checkout-summary" id="paymentResultSummary"></div>
       <p id="paymentResultMessage" style="color:#d8cfc5;font-size:14px;"></p>
+      <button class="btn-copy hidden" id="paymentResultCopy" type="button">Copiar alias</button>
       <button class="btn-gold" id="paymentResultWhatsapp" style="width:100%;">Avisar al local por WhatsApp</button>
     </div>
   </div>

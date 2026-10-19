@@ -43,7 +43,7 @@
       })
       .join("");
 
-    const hasFeeLine = isDelivery && order.deliveryFee !== undefined;
+    const hasFeeLine = isDelivery && order.deliveryFee !== undefined && order.deliveryEnabled !== false;
     const hasDiscount = order.discount > 0;
     const discountRows = (order.discountGroups || [])
       .map(
