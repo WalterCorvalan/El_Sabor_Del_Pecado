@@ -1481,6 +1481,14 @@
           <input type="text" id="transferAlias" maxlength="60" value="${esc(payment.transferAlias)}" placeholder="Ej: elsabor.pecado" />
         </div>
         <div class="field">
+          <label for="transferCvu">CVU o CBU (opcional)</label>
+          <input type="text" inputmode="numeric" id="transferCvu" maxlength="30" value="${esc(payment.transferCvu || "")}" />
+        </div>
+        <div class="field">
+          <label for="paymentLink">Link de pago de Mercado Pago (opcional)</label>
+          <input type="text" id="paymentLink" maxlength="200" value="${esc(payment.paymentLink || "")}" placeholder="https://mpago.la/..." />
+        </div>
+        <div class="field">
           <label for="transferHolder">Titular de la cuenta (opcional)</label>
           <input type="text" id="transferHolder" maxlength="80" value="${esc(payment.transferHolder)}" />
           <p class="hint">Cuando el cliente elige Transferencia, ve el monto y este alias, y el pedido sale por WhatsApp para que adjunte el comprobante.</p>
@@ -1514,6 +1522,12 @@
       markDirty();
     } else if (t.id === "transferHolder") {
       ensurePayment().transferHolder = t.value.trim();
+      markDirty();
+    } else if (t.id === "transferCvu") {
+      ensurePayment().transferCvu = t.value.replace(/[^0-9]/g, "");
+      markDirty();
+    } else if (t.id === "paymentLink") {
+      ensurePayment().paymentLink = t.value.trim();
       markDirty();
     }
   });

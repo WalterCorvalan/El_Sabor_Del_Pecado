@@ -67,6 +67,8 @@
     resumenShippingTitle: document.getElementById("resumenShippingTitle"),
     paymentMp: document.getElementById("paymentMp"),
     paymentResultCopy: document.getElementById("paymentResultCopy"),
+    paymentResultCopyCvu: document.getElementById("paymentResultCopyCvu"),
+    paymentResultLink: document.getElementById("paymentResultLink"),
     trackBar: document.getElementById("trackBar"),
     trackLink: document.getElementById("trackLink"),
     trackText: document.getElementById("trackText"),
@@ -550,6 +552,7 @@
 
     el.productModalBody.innerHTML = `
       ${photoHtml}
+      ${product.description ? `<p class="modal-desc">${escapeHtml(product.description)}</p>` : ""}
       ${variantsHtml}
       ${extrasHtml}
       <div class="variant-group">
@@ -1250,9 +1253,11 @@
     el.paymentResultTitle.textContent = "Pagá por transferencia";
     const rows = [`<div>Total a transferir: <strong>${money(total)}</strong></div>`];
     if (s.transferAlias) rows.push(`<div>Alias: <strong>${escapeHtml(s.transferAlias)}</strong></div>`);
+    if (s.transferCvu) rows.push(`<div>CVU: <strong>${escapeHtml(s.transferCvu)}</strong></div>`);
     if (s.transferHolder) rows.push(`<div>Titular: ${escapeHtml(s.transferHolder)}</div>`);
     el.paymentResultSummary.innerHTML = rows.join("");
-    el.paymentResultMessage.textContent = s.transferAlias
+    const hasData = !!(s.transferAlias || s.transferCvu || s.paymentLink);
+    el.paymentResultMessage.textContent = hasData
       ? "Hacé la transferencia y después tocá el botón: se abre WhatsApp con tu pedido. Adjuntá el comprobante en ese mismo chat."
       : "Tocá el botón para enviarnos el pedido por WhatsApp. Ahí te pasamos los datos para transferir.";
     el.paymentResultWhatsapp.textContent = "Enviar pedido por WhatsApp";
@@ -1270,6 +1275,19 @@
         showToast("No se pudo copiar, escribilo a mano");
       }
     };
+    el.paymentResultCopyCvu.classList.toggle("hidden", !s.transferCvu);
+    el.paymentResultCopyCvu.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(s.transferCvu);
+        showToast("CVU copiado");
+      } catch (_) {
+        showToast("No se pudo copiar, escribilo a mano");
+      }
+    };
+
+    el.paymentResultLink.classList.toggle("hidden", !s.paymentLink);
+    if (s.paymentLink) el.paymentResultLink.href = s.paymentLink;
+
     el.paymentResultModalBackdrop.classList.add("open");
   }
 

@@ -61,11 +61,19 @@ function product(id, name, description, image, variants = [], price = 0, extras 
   return { id, name, description, price, image, variants, extras };
 }
 
+// Datos de la cuenta de Mercado Pago a la que transfieren los clientes.
+const TRANSFER_DATA = {
+  transferAlias: "elsabordelpecado.mp",
+  transferCvu: "0000003100090499845534",
+  transferHolder: "Brenda Yanet Mereyro",
+  paymentLink: "https://mpago.la/1cRgax9"
+};
+
 // Versión del menú inicial. Si el menú guardado tiene otra versión (por ejemplo, uno viejo que
 // se guardó antes de que existieran las fotos y los precios actuales), catalog-get lo reemplaza
 // UNA vez por el menú inicial, conservando los ajustes (WhatsApp, horarios, envío, etc.).
 // Subir este número a propósito pisa los cambios hechos en el admin: solo hacerlo si se quiere eso.
-const MENU_VERSION = 7;
+const MENU_VERSION = 8;
 
 function defaultCatalog() {
   return {
@@ -75,7 +83,7 @@ function defaultCatalog() {
     // Ajustes de entrega y pago. Todo apagado hasta que el dueño lo active desde el admin.
     pickup: { enabled: false },
     trackingEnabled: false,
-    payment: { transferAlias: "", transferHolder: "", mercadopagoEnabled: false },
+    payment: { ...TRANSFER_DATA, mercadopagoEnabled: false },
     categories: [
       {
         id: "sandwiches",
@@ -355,6 +363,17 @@ function patchToV7(stored) {
   return c;
 }
 
+// Versión 7 -> 8: se cargan los datos de transferencia si todavía no se habían completado.
+function patchToV8(stored) {
+  const c = JSON.parse(JSON.stringify(stored));
+  const payment = c.payment || {};
+  if (!payment.transferAlias && !payment.transferCvu && !payment.paymentLink) {
+    c.payment = { ...payment, ...TRANSFER_DATA, mercadopagoEnabled: payment.mercadopagoEnabled === true };
+  }
+  c.menuVersion = 8;
+  return c;
+}
+
 // Ajustes que no son del menú y se conservan al reemplazar el menú guardado.
 function migrateCatalog(stored) {
   if (stored && stored.menuVersion >= 2 && stored.menuVersion < MENU_VERSION) {
@@ -364,6 +383,7 @@ function migrateCatalog(stored) {
     if (c.menuVersion === 4) c = patchToV5(c);
     if (c.menuVersion === 5) c = patchToV6(c);
     if (c.menuVersion === 6) c = patchToV7(c);
+    if (c.menuVersion === 7) c = patchToV8(c);
     return c;
   }
   const fresh = defaultCatalog();

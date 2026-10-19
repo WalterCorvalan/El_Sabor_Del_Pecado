@@ -59,6 +59,13 @@ function validateCheckoutSettings(catalog) {
     if (typeof p.transferAlias !== "string" || p.transferAlias.length > 60) return "El alias es inválido";
     if (typeof p.transferHolder !== "string" || p.transferHolder.length > 80) return "El titular de la cuenta es inválido";
     if (typeof p.mercadopagoEnabled !== "boolean") return "El ajuste de Mercado Pago es inválido";
+    if (p.transferCvu !== undefined && (typeof p.transferCvu !== "string" || !/^[0-9]{0,30}$/.test(p.transferCvu))) {
+      return "El CVU/CBU solo puede tener números";
+    }
+    if (p.paymentLink !== undefined) {
+      if (typeof p.paymentLink !== "string" || p.paymentLink.length > 200) return "El link de pago es inválido";
+      if (p.paymentLink && !/^https:\/\//.test(p.paymentLink)) return "El link de pago tiene que empezar con https://";
+    }
   }
   return null;
 }

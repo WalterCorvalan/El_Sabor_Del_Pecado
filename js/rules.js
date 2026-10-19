@@ -37,6 +37,8 @@
       trackingEnabled: cat.trackingEnabled === true,
       transferAlias: typeof payment.transferAlias === "string" ? payment.transferAlias.trim() : "",
       transferHolder: typeof payment.transferHolder === "string" ? payment.transferHolder.trim() : "",
+      transferCvu: typeof payment.transferCvu === "string" ? payment.transferCvu.trim() : "",
+      paymentLink: typeof payment.paymentLink === "string" ? payment.paymentLink.trim() : "",
       mercadopagoEnabled: payment.mercadopagoEnabled === true
     };
   }
