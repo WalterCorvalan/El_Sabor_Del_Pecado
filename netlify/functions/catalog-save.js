@@ -182,6 +182,12 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: "JSON inválido" }) };
   }
 
+  // Un celular de Argentina escrito con 10 dígitos (ej. 11 3903 3797) se guarda con 549 adelante.
+  if (catalog && typeof catalog.whatsappNumber === "string") {
+    const digits = catalog.whatsappNumber.replace(/[^0-9]/g, "");
+    catalog.whatsappNumber = digits.length === 10 ? `549${digits}` : digits;
+  }
+
   const validationError = validateCatalog(catalog);
   if (validationError) {
     return { statusCode: 400, body: JSON.stringify({ error: validationError }) };

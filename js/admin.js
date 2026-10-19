@@ -444,10 +444,11 @@
 
       <div class="card">
         <h2>WhatsApp del local</h2>
-        <p class="hint">Número que recibe los pedidos. Solo dígitos, con código de país y sin el +. Ejemplo: 5491122334455</p>
+        <p class="hint">Número que recibe los pedidos. Podés escribirlo como lo marcás desde un celular de Argentina (ej: 11 3903 3797): el sistema le agrega solo el código de país.</p>
         <div class="field">
           <input type="tel" inputmode="numeric" id="whatsappNumber" value="${esc(catalog.whatsappNumber || "")}" />
         </div>
+        <p class="hint" id="whatsappPreview"></p>
         <a class="inline-link" id="whatsappTest" href="#" target="_blank" rel="noopener">Probar este número en WhatsApp</a>
       </div>
 
@@ -472,7 +473,23 @@
     if (!link) return;
     const digits = waNumber(catalog.whatsappNumber);
     link.href = digits ? `https://wa.me/${digits}` : "#";
+    const preview = document.getElementById("whatsappPreview");
+    if (preview) {
+      preview.innerHTML = digits ? `Los pedidos van a llegar al <strong>+${esc(digits)}</strong>.` : "Todavía no hay un número cargado.";
+    }
   }
+
+  // Al salir del campo, un número de 10 dígitos queda guardado con el código de país.
+  el.tabAjustes.addEventListener("change", (e) => {
+    if (e.target.id !== "whatsappNumber") return;
+    const digits = waNumber(e.target.value);
+    e.target.value = digits;
+    if (digits !== catalog.whatsappNumber) {
+      catalog.whatsappNumber = digits;
+      markDirty();
+    }
+    updateWhatsappLink();
+  });
 
   el.tabAjustes.addEventListener("input", (e) => {
     if (e.target.id === "whatsappNumber") {
