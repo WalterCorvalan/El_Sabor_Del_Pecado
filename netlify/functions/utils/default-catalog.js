@@ -62,6 +62,20 @@ function product(id, name, description, image, variants = [], price = 0, extras 
 }
 
 // Datos de la cuenta de Mercado Pago a la que transfieren los clientes.
+// Bebidas nuevas (Levité) y fotos/descripciones actualizadas de las gaseosas de 600 ml.
+const LEVITE_PRICE = 2000;
+const LEVITE_PRODUCTS = [
+  ["bebida-levite-pomelo", "Levité Pomelo", "images/menu/bebida-levite-pomelo.webp"],
+  ["bebida-levite-manzana", "Levité Manzana Roja", "images/menu/bebida-levite-manzana.webp"]
+];
+const GASEOSAS_600 = {
+  "bebida-coca-cola": "images/menu/bebida-coca-cola-v2.webp",
+  "bebida-coca-cola-zero": "images/menu/bebida-coca-cola-zero-v2.webp",
+  "bebida-sprite": "images/menu/bebida-sprite-v2.webp",
+  "bebida-sprite-zero": "images/menu/bebida-sprite-zero-v2.webp"
+};
+const LEVITE_DESCRIPTION = "Agua saborizada 500 ml, sin azúcares";
+
 const TRANSFER_DATA = {
   transferAlias: "elsabordelpecado.mp",
   transferCvu: "0000003100090499845534",
@@ -73,7 +87,7 @@ const TRANSFER_DATA = {
 // se guardó antes de que existieran las fotos y los precios actuales), catalog-get lo reemplaza
 // UNA vez por el menú inicial, conservando los ajustes (WhatsApp, horarios, envío, etc.).
 // Subir este número a propósito pisa los cambios hechos en el admin: solo hacerlo si se quiere eso.
-const MENU_VERSION = 8;
+const MENU_VERSION = 9;
 
 function defaultCatalog() {
   return {
@@ -240,10 +254,12 @@ function defaultCatalog() {
         id: "bebidas",
         name: "Bebidas",
         products: [
-          product("bebida-coca-cola", "Coca-Cola", "Botella de 1 litro.", "images/menu/bebida-coca-cola.webp", [], 2000),
-          product("bebida-coca-cola-zero", "Coca-Cola Zero", "Botella de 1 litro.", "images/menu/bebida-coca-cola-zero.webp", [], 2000),
-          product("bebida-sprite", "Sprite", "Botella de 1 litro.", "images/menu/bebida-sprite.webp", [], 2000),
-          product("bebida-sprite-zero", "Sprite Zero", "Botella de 1 litro.", "images/menu/bebida-sprite-zero.webp", [], 2000),
+          product("bebida-levite-pomelo", "Levité Pomelo", LEVITE_DESCRIPTION, "images/menu/bebida-levite-pomelo.webp", [], LEVITE_PRICE),
+          product("bebida-levite-manzana", "Levité Manzana Roja", LEVITE_DESCRIPTION, "images/menu/bebida-levite-manzana.webp", [], LEVITE_PRICE),
+          product("bebida-coca-cola", "Coca-Cola", "Botella de 600 ml", "images/menu/bebida-coca-cola-v2.webp", [], 2000),
+          product("bebida-coca-cola-zero", "Coca-Cola Zero", "Botella de 600 ml", "images/menu/bebida-coca-cola-zero-v2.webp", [], 2000),
+          product("bebida-sprite", "Sprite", "Botella de 600 ml", "images/menu/bebida-sprite-v2.webp", [], 2000),
+          product("bebida-sprite-zero", "Sprite Zero", "Botella de 600 ml", "images/menu/bebida-sprite-zero-v2.webp", [], 2000),
           product("bebida-fanta", "Fanta", "Botella de 1 litro.", "images/menu/bebida-fanta.webp", [], 2000),
           product("bebida-stella-artois", "Stella Artois", "Cerveza bien fría.", "images/menu/bebida-stella-artois.webp", [], 3000),
           product("bebida-heineken", "Heineken", "Cerveza bien fría.", "images/menu/bebida-heineken.webp", [], 3000)
@@ -279,7 +295,7 @@ function defaultCatalog() {
                 name: "Bebida",
                 multiple: false,
                 required: true,
-                options: ["Coca-Cola", "Coca-Cola Zero", "Sprite", "Sprite Zero", "Fanta", "Stella Artois", "Heineken"]
+                options: ["Levité Pomelo", "Levité Manzana Roja", "Coca-Cola", "Coca-Cola Zero", "Sprite", "Sprite Zero", "Fanta", "Stella Artois", "Heineken"]
               }
             ],
             0
@@ -374,6 +390,40 @@ function patchToV8(stored) {
   return c;
 }
 
+// Versión 8 -> 9: se agregan las Levité y se actualizan fotos y descripciones de las gaseosas.
+// No toca precios guardados; las Levité nuevas entran con el precio de referencia.
+function patchToV9(stored) {
+  const c = JSON.parse(JSON.stringify(stored));
+  const bebidas = (c.categories || []).find((x) => x.id === "bebidas");
+  if (bebidas) {
+    bebidas.products = bebidas.products || [];
+    const nuevas = [];
+    for (const [id, name, image] of LEVITE_PRODUCTS) {
+      if (!bebidas.products.some((p) => p.id === id)) {
+        nuevas.push(product(id, name, LEVITE_DESCRIPTION, image, [], LEVITE_PRICE));
+      }
+    }
+    bebidas.products.unshift(...nuevas);
+    for (const p of bebidas.products) {
+      if (GASEOSAS_600[p.id]) {
+        p.image = GASEOSAS_600[p.id];
+        p.description = "Botella de 600 ml";
+      }
+    }
+  }
+  const promos = (c.categories || []).find((x) => x.id === "promos");
+  for (const p of (promos && promos.products) || []) {
+    for (const variant of p.variants || []) {
+      if (variant.id !== "bebida") continue;
+      const options = variant.options || [];
+      const faltan = LEVITE_PRODUCTS.map(([, name]) => name).filter((name) => !options.includes(name));
+      variant.options = [...faltan, ...options];
+    }
+  }
+  c.menuVersion = 9;
+  return c;
+}
+
 // Ajustes que no son del menú y se conservan al reemplazar el menú guardado.
 function migrateCatalog(stored) {
   if (stored && stored.menuVersion >= 2 && stored.menuVersion < MENU_VERSION) {
@@ -384,6 +434,7 @@ function migrateCatalog(stored) {
     if (c.menuVersion === 5) c = patchToV6(c);
     if (c.menuVersion === 6) c = patchToV7(c);
     if (c.menuVersion === 7) c = patchToV8(c);
+    if (c.menuVersion === 8) c = patchToV9(c);
     return c;
   }
   const fresh = defaultCatalog();
