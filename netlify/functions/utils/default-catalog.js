@@ -74,6 +74,10 @@ const GASEOSAS_600 = {
   "bebida-sprite": "images/menu/bebida-sprite-v2.webp",
   "bebida-sprite-zero": "images/menu/bebida-sprite-zero-v2.webp"
 };
+const CERVEZAS_LATA = {
+  "bebida-stella-artois": "images/menu/bebida-stella-artois-v2.webp",
+  "bebida-heineken": "images/menu/bebida-heineken-v2.webp"
+};
 const LEVITE_DESCRIPTION = "Agua saborizada 500 ml, sin azúcares";
 
 const TRANSFER_DATA = {
@@ -87,7 +91,7 @@ const TRANSFER_DATA = {
 // se guardó antes de que existieran las fotos y los precios actuales), catalog-get lo reemplaza
 // UNA vez por el menú inicial, conservando los ajustes (WhatsApp, horarios, envío, etc.).
 // Subir este número a propósito pisa los cambios hechos en el admin: solo hacerlo si se quiere eso.
-const MENU_VERSION = 9;
+const MENU_VERSION = 10;
 
 function defaultCatalog() {
   return {
@@ -260,9 +264,8 @@ function defaultCatalog() {
           product("bebida-coca-cola-zero", "Coca-Cola Zero", "Botella de 600 ml", "images/menu/bebida-coca-cola-zero-v2.webp", [], 2000),
           product("bebida-sprite", "Sprite", "Botella de 600 ml", "images/menu/bebida-sprite-v2.webp", [], 2000),
           product("bebida-sprite-zero", "Sprite Zero", "Botella de 600 ml", "images/menu/bebida-sprite-zero-v2.webp", [], 2000),
-          product("bebida-fanta", "Fanta", "Botella de 1 litro.", "images/menu/bebida-fanta.webp", [], 2000),
-          product("bebida-stella-artois", "Stella Artois", "Cerveza bien fría.", "images/menu/bebida-stella-artois.webp", [], 3000),
-          product("bebida-heineken", "Heineken", "Cerveza bien fría.", "images/menu/bebida-heineken.webp", [], 3000)
+          product("bebida-stella-artois", "Stella Artois", "Lata de 330 ml", "images/menu/bebida-stella-artois-v2.webp", [], 3000),
+          product("bebida-heineken", "Heineken", "Lata de 330 ml", "images/menu/bebida-heineken-v2.webp", [], 3000)
         ]
       },
       {
@@ -295,7 +298,7 @@ function defaultCatalog() {
                 name: "Bebida",
                 multiple: false,
                 required: true,
-                options: ["Levité Pomelo", "Levité Manzana Roja", "Coca-Cola", "Coca-Cola Zero", "Sprite", "Sprite Zero", "Fanta", "Stella Artois", "Heineken"]
+                options: ["Levité Pomelo", "Levité Manzana Roja", "Coca-Cola", "Coca-Cola Zero", "Sprite", "Sprite Zero", "Stella Artois", "Heineken"]
               }
             ],
             0
@@ -424,6 +427,30 @@ function patchToV9(stored) {
   return c;
 }
 
+// Versión 9 -> 10: se saca la Fanta y las cervezas pasan a mostrar la lata de 330 ml.
+// No toca precios guardados.
+function patchToV10(stored) {
+  const c = JSON.parse(JSON.stringify(stored));
+  const bebidas = (c.categories || []).find((x) => x.id === "bebidas");
+  if (bebidas) {
+    bebidas.products = (bebidas.products || []).filter((p) => p.id !== "bebida-fanta");
+    for (const p of bebidas.products) {
+      if (CERVEZAS_LATA[p.id]) {
+        p.image = CERVEZAS_LATA[p.id];
+        p.description = "Lata de 330 ml";
+      }
+    }
+  }
+  const promos = (c.categories || []).find((x) => x.id === "promos");
+  for (const p of (promos && promos.products) || []) {
+    for (const variant of p.variants || []) {
+      if (variant.id === "bebida") variant.options = (variant.options || []).filter((o) => o !== "Fanta");
+    }
+  }
+  c.menuVersion = 10;
+  return c;
+}
+
 // Ajustes que no son del menú y se conservan al reemplazar el menú guardado.
 function migrateCatalog(stored) {
   if (stored && stored.menuVersion >= 2 && stored.menuVersion < MENU_VERSION) {
@@ -435,6 +462,7 @@ function migrateCatalog(stored) {
     if (c.menuVersion === 6) c = patchToV7(c);
     if (c.menuVersion === 7) c = patchToV8(c);
     if (c.menuVersion === 8) c = patchToV9(c);
+    if (c.menuVersion === 9) c = patchToV10(c);
     return c;
   }
   const fresh = defaultCatalog();
