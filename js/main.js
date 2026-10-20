@@ -1285,8 +1285,18 @@
       }
     };
 
-    el.paymentResultLink.classList.toggle("hidden", !s.paymentLink);
-    if (s.paymentLink) el.paymentResultLink.href = s.paymentLink;
+    // Con alias: el botón copia el alias y abre Mercado Pago (en el celular abre la app si está
+    // instalada). Sin alias, abre el link de pago configurado en el admin.
+    el.paymentResultLink.classList.toggle("hidden", !(s.transferAlias || s.paymentLink));
+    el.paymentResultLink.href = s.transferAlias ? "https://www.mercadopago.com.ar/" : s.paymentLink;
+    el.paymentResultLink.onclick = () => {
+      if (!s.transferAlias) return;
+      // Sin await: el copiado tiene que salir dentro del toque, antes de que se abra la otra app.
+      navigator.clipboard.writeText(s.transferAlias).then(
+        () => showToast("Alias copiado"),
+        () => showToast("No se pudo copiar, escribilo a mano")
+      );
+    };
 
     el.paymentResultModalBackdrop.classList.add("open");
   }
