@@ -2667,3 +2667,11 @@ a.btn-copy {
   text-align: center;
   text-decoration: none;
 }
+
+.category-section h3 .section-note {
+  color: var(--text-muted, #b8aea3);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+}

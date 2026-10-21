@@ -368,7 +368,7 @@
         return `
           <section class="category-section" id="${cat.id}">
             <div class="section-header">
-              <h3>${escapeHtml(cat.name)}</h3>
+              <h3>${escapeHtml(cat.name)}${cat.note ? ` <small class="section-note">(${escapeHtml(cat.note)})</small>` : ""}</h3>
             </div>
             <div class="product-grid">${cards || '<p style="color:#9e9e9e;">Sin productos en esta categoría.</p>'}</div>
           </section>

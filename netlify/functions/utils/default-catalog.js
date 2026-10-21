@@ -64,6 +64,12 @@ function product(id, name, description, image, variants = [], price = 0, extras 
 // Datos de la cuenta de Mercado Pago a la que transfieren los clientes.
 // Bebidas nuevas (Levité) y fotos/descripciones actualizadas de las gaseosas de 600 ml.
 const LEVITE_PRICE = 2000;
+const GASEOSA_PRICE = 2800;
+const CERVEZA_PRICE = 4200;
+const PLATO_PRICE = 25000;
+const SANDWICH_NOTE = "incluye guarnición de papas españolas";
+const PLATO_NOTE = "incluye guarnición a elección";
+const EMPANADAS_NOTE = "la docena $33.000";
 const LEVITE_PRODUCTS = [
   ["bebida-levite-pomelo", "Levité Pomelo", "images/menu/bebida-levite-pomelo.webp"],
   ["bebida-levite-manzana", "Levité Manzana Roja", "images/menu/bebida-levite-manzana.webp"]
@@ -91,7 +97,7 @@ const TRANSFER_DATA = {
 // se guardó antes de que existieran las fotos y los precios actuales), catalog-get lo reemplaza
 // UNA vez por el menú inicial, conservando los ajustes (WhatsApp, horarios, envío, etc.).
 // Subir este número a propósito pisa los cambios hechos en el admin: solo hacerlo si se quiere eso.
-const MENU_VERSION = 10;
+const MENU_VERSION = 11;
 
 function defaultCatalog() {
   return {
@@ -106,6 +112,7 @@ function defaultCatalog() {
       {
         id: "sandwiches",
         name: "Sándwiches",
+        note: SANDWICH_NOTE,
         products: [
           product(
             "sandwich-vacio",
@@ -152,6 +159,7 @@ function defaultCatalog() {
       {
         id: "al-plato",
         name: "Al Plato",
+        note: PLATO_NOTE,
         products: [
           product(
             "plato-vacio",
@@ -159,7 +167,7 @@ function defaultCatalog() {
             "Lonjas de vacío de ternera horneado a lenta cocción en reducción de vino tinto con hortalizas de estación y hierbas aromáticas. Guarnición a elección.",
             "images/menu/plato-vacio.webp",
             [guarnicionVariant()],
-            22000
+            25000
           ),
           product(
             "plato-pollo-funghi",
@@ -167,7 +175,7 @@ function defaultCatalog() {
             "Pollo deshuesado dorado en salsa de champiñones, portobellos, verdeo, manteca y crema. Guarnición a elección.",
             "images/menu/plato-pollo-funghi.webp",
             [guarnicionVariant()],
-            22000
+            25000
           ),
           product(
             "plato-bondiola-barbacoa",
@@ -175,7 +183,7 @@ function defaultCatalog() {
             "Rodajas de bondiola marinada y cocida en reducción de cerveza negra, ajo, salsa barbacoa y rub seco de pimentón. Guarnición a elección.",
             "images/menu/plato-bondiola-barbacoa.webp",
             [guarnicionVariant()],
-            22000
+            25000
           ),
           product(
             "plato-osobuco-malbec",
@@ -183,7 +191,7 @@ function defaultCatalog() {
             "Rodajas de osobuco al disco cocido en vino Malbec, entre cebollas, zanahoria, ajo, apio, pimentón y caldo de verduras. Guarnición a elección.",
             "images/menu/plato-osobuco-malbec.webp",
             [guarnicionVariant()],
-            22000
+            25000
           ),
           product(
             "plato-bondiola-honey-mustard",
@@ -191,13 +199,14 @@ function defaultCatalog() {
             "Rodajas de bondiola cocida a baja temperatura durante varias horas con cebollas caramelizadas, mostaza, miel y finas hierbas. Guarnición a elección.",
             "images/menu/plato-bondiola-honey-mustard.webp",
             [guarnicionVariant()],
-            22000
+            25000
           )
         ]
       },
       {
         id: "empanadas",
         name: "Empanadas Gourmet",
+        note: EMPANADAS_NOTE,
         // Cada 12 empanadas (de cualquier gusto) se cobran $33.000 en vez de 12 x $3.000.
         bundle: { enabled: true, size: 12, price: 33000 },
         products: [
@@ -260,12 +269,12 @@ function defaultCatalog() {
         products: [
           product("bebida-levite-pomelo", "Levité Pomelo", LEVITE_DESCRIPTION, "images/menu/bebida-levite-pomelo.webp", [], LEVITE_PRICE),
           product("bebida-levite-manzana", "Levité Manzana Roja", LEVITE_DESCRIPTION, "images/menu/bebida-levite-manzana.webp", [], LEVITE_PRICE),
-          product("bebida-coca-cola", "Coca-Cola", "Botella de 600 ml", "images/menu/bebida-coca-cola-v2.webp", [], 2000),
-          product("bebida-coca-cola-zero", "Coca-Cola Zero", "Botella de 600 ml", "images/menu/bebida-coca-cola-zero-v2.webp", [], 2000),
-          product("bebida-sprite", "Sprite", "Botella de 600 ml", "images/menu/bebida-sprite-v2.webp", [], 2000),
-          product("bebida-sprite-zero", "Sprite Zero", "Botella de 600 ml", "images/menu/bebida-sprite-zero-v2.webp", [], 2000),
-          product("bebida-stella-artois", "Stella Artois", "Lata de 330 ml", "images/menu/bebida-stella-artois-v2.webp", [], 3000),
-          product("bebida-heineken", "Heineken", "Lata de 330 ml", "images/menu/bebida-heineken-v2.webp", [], 3000)
+          product("bebida-coca-cola", "Coca-Cola", "Botella de 600 ml", "images/menu/bebida-coca-cola-v2.webp", [], GASEOSA_PRICE),
+          product("bebida-coca-cola-zero", "Coca-Cola Zero", "Botella de 600 ml", "images/menu/bebida-coca-cola-zero-v2.webp", [], GASEOSA_PRICE),
+          product("bebida-sprite", "Sprite", "Botella de 600 ml", "images/menu/bebida-sprite-v2.webp", [], GASEOSA_PRICE),
+          product("bebida-sprite-zero", "Sprite Zero", "Botella de 600 ml", "images/menu/bebida-sprite-zero-v2.webp", [], GASEOSA_PRICE),
+          product("bebida-stella-artois", "Stella Artois", "Lata de 330 ml", "images/menu/bebida-stella-artois-v2.webp", [], CERVEZA_PRICE),
+          product("bebida-heineken", "Heineken", "Lata de 330 ml", "images/menu/bebida-heineken-v2.webp", [], CERVEZA_PRICE)
         ]
       },
       {
@@ -451,6 +460,32 @@ function patchToV10(stored) {
   return c;
 }
 
+// Versión 10 -> 11: precios nuevos de bebidas (gaseosas, cervezas y Levité) y de los platos,
+// y aclaraciones al lado del título de sándwiches, platos y empanadas.
+function patchToV11(stored) {
+  const c = JSON.parse(JSON.stringify(stored));
+  const priceById = {
+    "bebida-coca-cola": GASEOSA_PRICE,
+    "bebida-coca-cola-zero": GASEOSA_PRICE,
+    "bebida-sprite": GASEOSA_PRICE,
+    "bebida-sprite-zero": GASEOSA_PRICE,
+    "bebida-stella-artois": CERVEZA_PRICE,
+    "bebida-heineken": CERVEZA_PRICE,
+    "bebida-levite-pomelo": LEVITE_PRICE,
+    "bebida-levite-manzana": LEVITE_PRICE
+  };
+  const notes = { sandwiches: SANDWICH_NOTE, "al-plato": PLATO_NOTE, empanadas: EMPANADAS_NOTE };
+  for (const category of c.categories || []) {
+    if (notes[category.id]) category.note = notes[category.id];
+    for (const p of category.products || []) {
+      if (category.id === "bebidas" && priceById[p.id] !== undefined) p.price = priceById[p.id];
+      if (category.id === "al-plato") p.price = PLATO_PRICE;
+    }
+  }
+  c.menuVersion = 11;
+  return c;
+}
+
 // Ajustes que no son del menú y se conservan al reemplazar el menú guardado.
 function migrateCatalog(stored) {
   if (stored && stored.menuVersion >= 2 && stored.menuVersion < MENU_VERSION) {
@@ -463,6 +498,7 @@ function migrateCatalog(stored) {
     if (c.menuVersion === 7) c = patchToV8(c);
     if (c.menuVersion === 8) c = patchToV9(c);
     if (c.menuVersion === 9) c = patchToV10(c);
+    if (c.menuVersion === 10) c = patchToV11(c);
     return c;
   }
   const fresh = defaultCatalog();
