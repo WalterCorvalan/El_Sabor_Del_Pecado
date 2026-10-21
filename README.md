@@ -1,7 +1,7 @@
 # 🔥 El Sabor del Pecado
 
 Sitio de pedidos online para delivery de comida casera (hamburguesas, platos y empanadas).
-Sitio estático (HTML/CSS/JS vanilla) + Netlify Functions, pensado para desplegarse gratis en Netlify.
+Sitio estático (HTML/CSS/JS vanilla) + funciones serverless, desplegado en Vercel.
 
 ## Funcionalidad
 
@@ -13,7 +13,7 @@ Sitio estático (HTML/CSS/JS vanilla) + Netlify Functions, pensado para desplega
   WhatsApp (`wa.me`); con Mercado Pago redirige a Checkout Pro, y al volver pago el cliente
   confirma el envío del pedido por WhatsApp con una nota de "ya pagado".
 - Panel `/admin.html` protegido por contraseña para editar productos, categorías y el número de
-  WhatsApp, sin tocar código. Los datos se guardan en **Netlify Blobs**.
+  WhatsApp, sin tocar código. Los datos se guardan en **Vercel Blob**.
 
 ## Estructura
 
@@ -23,45 +23,30 @@ admin.html             panel de administración
 css/styles.css
 js/main.js             lógica del carrito, checkout y pago con Mercado Pago
 js/admin.js             lógica del panel admin
-netlify/functions/
+api/                    una función de Vercel por archivo (envuelven los handlers de abajo)
+netlify/functions/      lógica de los handlers (el nombre de la carpeta viene de cuando el sitio estaba en Netlify)
   catalog-get.js        GET público del catálogo (lo siembra con datos de ejemplo la 1ª vez)
   catalog-save.js        guarda el catálogo (requiere token de admin)
   admin-login.js          valida la contraseña y devuelve un token temporal (2hs)
   create-payment.js        crea una preferencia de pago en Mercado Pago (Checkout Pro)
   utils/auth.js            firma/verifica el token (HMAC con ADMIN_PASSWORD)
-  utils/blob-store.js      conexión a Netlify Blobs (con respaldo manual siteID/token)
+  utils/blob-store.js      conexión a Vercel Blob (el código de Netlify Blobs quedó como alternativa sin uso)
   utils/default-catalog.js  catálogo de ejemplo inicial
 ```
 
 ## Variables de entorno
 
-Configurar en Netlify (Site settings → Environment variables):
+Configurar en Vercel (Settings → Environment Variables):
 
 | Variable                   | Descripción                                                        |
 |-----------------------------|---------------------------------------------------------------------|
 | `ADMIN_PASSWORD`            | Contraseña para entrar a `/admin.html`                               |
-| `NETLIFY_SITE_ID`            | ID del sitio (ver "Project overview"). Respaldo si Blobs no recibe contexto automático |
-| `NETLIFY_BLOBS_TOKEN`         | Personal access token de Netlify. Mismo respaldo que `NETLIFY_SITE_ID` |
+| `BLOB_READ_WRITE_TOKEN`      | Token de Vercel Blob (se agrega solo al conectar el store de Blob al proyecto) |
 | `MERCADOPAGO_ACCESS_TOKEN`     | Access Token de Mercado Pago (mercadopago.com.ar/developers/panel). Si empieza con `TEST-` se usa el checkout de prueba (sandbox) |
-
-En teoría Netlify Blobs se configura solo (`NETLIFY_SITE_ID`/`NETLIFY_BLOBS_TOKEN` son solo
-necesarias si el contexto automático falla con `MissingBlobsEnvironmentError`, como pasó en este
-proyecto en la plataforma nueva de Netlify — ver `utils/blob-store.js`).
-
-## Deploy en Netlify
-
-1. Crear un nuevo sitio en Netlify apuntando a este repositorio.
-2. Build command: *(no hace falta, es estático)* — ya está configurado en `netlify.toml`.
-3. Publish directory: `.` (raíz).
-4. Agregar la variable de entorno `ADMIN_PASSWORD` con una contraseña fuerte.
-5. Deploy. El sitio queda en `https://<tu-sitio>.netlify.app`.
-6. Entrar a `https://<tu-sitio>.netlify.app/admin.html` con esa contraseña para cargar el número
-   de WhatsApp real y el catálogo definitivo (al desplegar, el sitio arranca con un catálogo de
-   ejemplo para poder probar el flujo completo).
 
 ## Deploy en Vercel
 
-El mismo código corre en Vercel: las carpetas `api/` envuelven los handlers de `netlify/functions`
+Las carpetas `api/` envuelven los handlers de `netlify/functions`
 y el catálogo se guarda en Vercel Blob (ver `netlify/functions/utils/blob-store.js`).
 
 1. Importar el repositorio en Vercel (Framework Preset: *Other*, sin build command).
@@ -71,7 +56,7 @@ y el catálogo se guarda en Vercel Blob (ver `netlify/functions/utils/blob-store
 
 ### Pedidos, horarios y envío
 
-- Cada pedido se guarda (Vercel Blob o Netlify Blobs) y se ve en `/admin.html`, pestaña **Pedidos**, con botón para imprimir el ticket de 80 mm. La pestaña **Estadísticas** resume ventas, lo más pedido y los horarios de más pedidos.
+- Cada pedido se guarda (Vercel Blob) y se ve en `/admin.html`, pestaña **Pedidos**, con botón para imprimir el ticket de 80 mm. La pestaña **Estadísticas** resume ventas, lo más pedido y los horarios de más pedidos.
 - En **Ajustes** se activan, de forma opcional, los horarios automáticos y el costo de envío (general o por zona).
 - Las reglas de horarios, envío y precios están en `js/rules.js` y las usan la tienda y el servidor.
 - **Precio por cantidad (docena):** cada categoría puede tener un precio por pack (Admin → Menú → categoría → "Precio por cantidad"). Hoy Empanadas Gourmet cobra cada 12 empanadas, de cualquier gusto, a $33.000; las que sobran van a $3.000. El descuento lo calculan `js/rules.js` (carrito y servidor), y en Mercado Pago el pack se manda como un solo ítem.
@@ -89,15 +74,15 @@ y el catálogo se guarda en Vercel Blob (ver `netlify/functions/utils/blob-store
 
 ```bash
 npm install
-npx netlify dev
+npx vercel dev
 ```
 
-Esto levanta el sitio y las functions en `http://localhost:8888` (requiere la Netlify CLI y estar
-logueado/linkeado al sitio para que Netlify Blobs funcione localmente).
+Esto levanta el sitio y las funciones de `api/` en local (requiere la CLI de Vercel y tener el proyecto
+linkeado para que Vercel Blob funcione localmente).
 
 ## Fuera de alcance (por ahora)
 
 - Historial de pedidos: el pedido solo se envía por WhatsApp, no queda guardado en ningún lado
   (incluso pagando con Mercado Pago, la confirmación depende de que el cliente toque el botón de
   WhatsApp al volver del pago — no hay webhook ni base de datos de pedidos).
-- Dominio propio: queda en `*.netlify.app`.
+- Dominio propio: queda en `*.vercel.app`.

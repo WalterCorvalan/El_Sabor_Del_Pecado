@@ -1,6 +1,6 @@
-// Catálogo inicial. Se usa para "sembrar" Netlify Blobs la primera vez que corre el sitio
+// Catálogo inicial. Se usa para "sembrar" Vercel Blob la primera vez que corre el sitio
 // (antes de que el admin cargue sus propios datos).
-// Ojo: esto SOLO se usa si Blobs todavía no tiene ningún catálogo guardado. Si el
+// Ojo: esto SOLO se usa si Blob todavía no tiene ningún catálogo guardado. Si el
 // sitio ya está en producción con datos cargados, cambiar este archivo no actualiza
 // el catálogo en vivo — eso se edita siempre desde /admin.html.
 // Los precios son de referencia (placeholder) hasta que se carguen los reales.
