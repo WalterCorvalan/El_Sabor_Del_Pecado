@@ -1238,6 +1238,64 @@
     });
   });
 
+  // ---------------- Instalar la app (después de confirmar un pedido) ----------------
+  const INSTALL_DISMISSED_KEY = "installDismissed";
+  let installEvent = null;
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    installEvent = event;
+  });
+  window.addEventListener("appinstalled", () => {
+    installEvent = null;
+    document.getElementById("installModalBackdrop").classList.remove("open");
+  });
+
+  function isStandalone() {
+    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  }
+
+  function isIosSafari() {
+    const ua = navigator.userAgent;
+    const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    return ios && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+  }
+
+  // Se ofrece una sola vez por celular: Android muestra el botón de instalar; en iPhone, los pasos.
+  function offerInstall() {
+    let dismissed = false;
+    try { dismissed = localStorage.getItem(INSTALL_DISMISSED_KEY) === "1"; } catch (_) {}
+    if (dismissed || isStandalone()) return;
+
+    const button = document.getElementById("installButton");
+    const text = document.getElementById("installText");
+    if (installEvent) {
+      button.classList.remove("hidden");
+      button.onclick = async () => {
+        const ev = installEvent;
+        installEvent = null;
+        document.getElementById("installModalBackdrop").classList.remove("open");
+        ev.prompt();
+        try { await ev.userChoice; } catch (_) {}
+      };
+    } else if (isIosSafari()) {
+      button.classList.add("hidden");
+      text.textContent = "Para tener la app en tu pantalla de inicio: tocá el botón Compartir (el cuadrado con la flecha hacia arriba) y elegí “Agregar a inicio”.";
+    } else {
+      return;
+    }
+    document.getElementById("installModalBackdrop").classList.add("open");
+    try { localStorage.setItem(INSTALL_DISMISSED_KEY, "1"); } catch (_) {}
+  }
+
+  document.getElementById("installClose").addEventListener("click", () => {
+    document.getElementById("installModalBackdrop").classList.remove("open");
+  });
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+  }
+
   // Después de confirmar un pedido por transferencia: se muestra el alias y el monto, y el
   // pedido sale por WhatsApp junto con el aviso de que el comprobante va en ese mismo chat.
   function showTransferScreen(contact, total) {
@@ -1264,6 +1322,7 @@
     el.paymentResultWhatsapp.onclick = () => {
       openWhatsappWithMessage(message);
       el.paymentResultModalBackdrop.classList.remove("open");
+      offerInstall();
     };
 
     el.paymentResultCopy.classList.toggle("hidden", !s.transferAlias);
@@ -1437,6 +1496,7 @@
       renderCartBadge();
       renderCartModal();
       showToast(`Pedido #${saved.number} enviado`);
+      offerInstall();
     }
   });
 
@@ -1473,6 +1533,7 @@
         openWhatsappWithMessage(message);
         sessionStorage.removeItem(PENDING_ORDER_KEY);
         el.paymentResultModalBackdrop.classList.remove("open");
+        offerInstall();
       };
 
       el.paymentResultModalBackdrop.classList.add("open");
