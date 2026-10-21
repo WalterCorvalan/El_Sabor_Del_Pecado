@@ -1220,6 +1220,15 @@
     ordersTimer = null;
   }
 
+  // Aviso del navegador (si el dueño lo activó) cuando entra un pedido y el admin está en segundo plano.
+  function notifyNewOrders(fresh) {
+    try {
+      if (!("Notification" in window) || Notification.permission !== "granted" || !document.hidden) return;
+      const body = fresh.length === 1 ? `Pedido #${fresh[0].number}` : `${fresh.length} pedidos nuevos`;
+      new Notification("Pedido nuevo - El Sabor del Pecado", { body, icon: "images/icons/icon-192.png", tag: "nuevo-pedido" });
+    } catch (_) {}
+  }
+
   function beep() {
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -1260,6 +1269,7 @@
         const fresh = orders.filter((o) => !knownOrderIds.has(o.id) && o.status === "nuevo");
         if (fresh.length) {
           beep();
+          notifyNewOrders(fresh);
           toast(fresh.length === 1 ? `Pedido nuevo #${fresh[0].number}` : `${fresh.length} pedidos nuevos`, "ok");
         }
       }
@@ -1360,11 +1370,96 @@
         </div>
         <button type="button" class="btn btn-ghost btn-sm" data-oaction="refresh">Actualizar</button>
       </div>
+      <div class="orders-bar">
+        <label class="switch"><input type="checkbox" id="quickStoreOpen" ${catalog && catalog.storeOpen === false ? "" : "checked"} /><span class="slider"></span> <span id="quickStoreOpenLabel">${catalog && catalog.storeOpen === false ? "Local cerrado" : "Local abierto"}</span></label>
+        <span>
+          ${"Notification" in window && Notification.permission === "default" ? '<button type="button" class="btn btn-ghost btn-sm" data-oaction="notify">Activar avisos</button>' : ""}
+          <button type="button" class="btn btn-ghost btn-sm" data-oaction="export">Descargar Excel</button>
+        </span>
+      </div>
       ${
         visible.length
           ? visible.map(orderHtml).join("")
           : `<div class="empty-box">${ordersFilter === "activos" ? "No hay pedidos activos." : "Todavía no hay pedidos."}</div>`
       }`;
+  }
+
+  // Abrir o cerrar el local desde Pedidos: se guarda en el momento, sin pasar por Ajustes.
+  el.tabPedidos.addEventListener("change", async (e) => {
+    if (e.target.id !== "quickStoreOpen" || !catalog) return;
+    const input = e.target;
+    if (dirty) {
+      input.checked = catalog.storeOpen !== false;
+      toast("Tenés cambios sin guardar en el menú. Guardalos primero", "error");
+      return;
+    }
+    const wanted = input.checked;
+    input.disabled = true;
+    try {
+      const res = await fetch("/api/catalog-save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...catalog, storeOpen: wanted })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        logout("Tu sesión expiró, ingresá de nuevo");
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || "No se pudo guardar");
+      catalog.storeOpen = wanted;
+      toast(wanted ? "Local abierto" : "Local cerrado", "ok");
+    } catch (err) {
+      input.checked = catalog.storeOpen !== false;
+      toast(err.message || "Error de conexión", "error");
+    } finally {
+      input.disabled = false;
+      const label = document.getElementById("quickStoreOpenLabel");
+      if (label) label.textContent = catalog.storeOpen === false ? "Local cerrado" : "Local abierto";
+    }
+  });
+
+  // Todos los pedidos guardados, en un CSV que abre Excel (separado por ";", con tildes).
+  async function exportOrdersCsv(btn) {
+    btn.disabled = true;
+    try {
+      const res = await fetch("/api/orders-list?all=1", { cache: "no-store", headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) {
+        logout("Tu sesión expiró, ingresá de nuevo");
+        return;
+      }
+      if (!res.ok) throw new Error("orders-list " + res.status);
+      const all = (await res.json()).orders || [];
+      const cell = (v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+      const rows = [["Número", "Fecha", "Estado", "Cliente", "Teléfono", "Entrega", "Dirección", "Pago", "Productos", "Total"]].concat(
+        all.map((o) => [
+          o.number,
+          new Date(o.createdAt).toLocaleString("es-AR"),
+          o.status,
+          (o.customer && o.customer.name) || "",
+          (o.customer && o.customer.phone) || "",
+          o.shipping || "",
+          o.address || "",
+          o.payment || "",
+          (o.items || []).map((i) => i.qty + "x " + i.name).join(" | "),
+          o.total
+        ])
+      );
+      const csv = "\uFEFF" + rows.map((r) => r.map(cell).join(";")).join("\r\n");
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "pedidos-el-sabor-del-pecado.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      console.error(err);
+      toast("No se pudieron descargar los pedidos", "error");
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   el.tabPedidos.addEventListener("click", async (e) => {
@@ -1381,6 +1476,16 @@
 
     if (action === "refresh") {
       loadOrders();
+      return;
+    }
+
+    if (action === "notify") {
+      Notification.requestPermission().then(() => renderOrders());
+      return;
+    }
+
+    if (action === "export") {
+      exportOrdersCsv(btn);
       return;
     }
 
