@@ -376,6 +376,8 @@
       })
       .join("");
 
+    renderRepeatOrder();
+
     el.catalog.querySelectorAll("[data-product-open]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const { categoryId, productId } = btn.dataset;
@@ -881,7 +883,53 @@
       });
     }
     if (state.cart.length) el.cartItems.insertAdjacentHTML("beforeend", promoCartHtml());
+    if (state.cart.length) renderCartSuggestions();
     el.cartTotal.textContent = money(cartTotal());
+  }
+
+  // Sugerencias antes de confirmar: si el pedido no tiene dip o bebida, se ofrecen con un toque.
+  // Solo productos sin opciones obligatorias (se suman directo) y que estén disponibles.
+  const SUGGESTION_CATEGORIES = [
+    { id: "dips", title: "¿Te sumás un dip?" },
+    { id: "bebidas", title: "¿Y para tomar?" }
+  ];
+
+  function renderCartSuggestions() {
+    if (!state.catalog || storeIsClosed()) return;
+    const blocks = [];
+    for (const sug of SUGGESTION_CATEGORIES) {
+      const category = state.catalog.categories.find((c) => c.id === sug.id && !c.hidden);
+      if (!category || state.cart.some((i) => i.categoryId === sug.id)) continue;
+      const products = category.products
+        .filter((p) => p.available !== false && !(p.variants || []).some((v) => v.required) && Number(p.price) > 0)
+        .slice(0, 3);
+      if (!products.length) continue;
+      blocks.push(`
+        <div class="cart-suggest">
+          <div class="cart-suggest-title">${sug.title}</div>
+          <div class="cart-suggest-list">
+            ${products
+              .map(
+                (p) => `<button type="button" class="cart-suggest-btn" data-suggest-cat="${escapeHtml(category.id)}" data-suggest-id="${escapeHtml(p.id)}">
+                  <span>${escapeHtml(p.name)}</span><strong>+ ${money(p.price)}</strong></button>`
+              )
+              .join("")}
+          </div>
+        </div>`);
+    }
+    if (!blocks.length) return;
+    el.cartItems.insertAdjacentHTML("beforeend", blocks.join(""));
+    el.cartItems.querySelectorAll("[data-suggest-id]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const category = state.catalog.categories.find((c) => c.id === btn.dataset.suggestCat);
+        const product = category && category.products.find((p) => p.id === btn.dataset.suggestId);
+        if (!product) return;
+        addToCart(category, product, 1, [], [], "");
+        haptic(10);
+        showToast(`${product.name} agregado al carrito`);
+        renderCartModal();
+      });
+    });
   }
 
   function openCartModal() {
@@ -1238,6 +1286,61 @@
     });
   });
 
+  // ---------------- Repetir el último pedido ----------------
+  const LAST_CART_KEY = "esdp_last_cart_v1";
+
+  function rememberLastCart() {
+    try {
+      const items = state.cart.map((i) => ({
+        productId: i.productId,
+        categoryId: i.categoryId,
+        qty: i.qty,
+        selections: i.selections,
+        extras: i.extras,
+        notes: i.notes
+      }));
+      if (items.length) localStorage.setItem(LAST_CART_KEY, JSON.stringify(items));
+    } catch (_) {}
+  }
+
+  function repeatableItems() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(LAST_CART_KEY)); } catch (_) {}
+    if (!Array.isArray(saved) || !state.catalog) return [];
+    const result = [];
+    for (const item of saved) {
+      const category = state.catalog.categories.find((c) => c.id === item.categoryId && !c.hidden);
+      const product = category && category.products.find((p) => p.id === item.productId);
+      if (product && product.available !== false) result.push({ category, product, item });
+    }
+    return result;
+  }
+
+  function renderRepeatOrder() {
+    let box = document.getElementById("repeatOrder");
+    const found = repeatableItems();
+    if (!found.length || storeIsClosed()) {
+      if (box) box.remove();
+      return;
+    }
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "repeatOrder";
+      box.className = "repeat-order";
+      el.catalog.insertAdjacentElement("beforebegin", box);
+    }
+    const names = found.map((f) => (f.item.qty > 1 ? f.item.qty + "x " : "") + f.product.name).join(", ");
+    box.innerHTML = `<div><strong>Repetir mi último pedido</strong><span>${escapeHtml(names)}</span></div><button type="button" class="btn-add-sm" id="repeatOrderBtn">Repetir</button>`;
+    document.getElementById("repeatOrderBtn").addEventListener("click", () => {
+      for (const { category, product, item } of found) {
+        addToCart(category, product, item.qty, item.selections || [], item.extras || [], item.notes || "");
+      }
+      haptic(10);
+      showToast("Listo, sumamos tu último pedido al carrito");
+      openCartModal();
+    });
+  }
+
   // ---------------- Instalar la app (después de confirmar un pedido) ----------------
   const INSTALL_DISMISSED_KEY = "installDismissed";
   let installEvent = null;
@@ -1448,6 +1551,8 @@
       zoneId: el.deliveryZone.value,
       payment: selectedPayment
     });
+
+    rememberLastCart();
 
     if (selectedPayment === "Transferencia") {
       showTransferScreen(contact, total);

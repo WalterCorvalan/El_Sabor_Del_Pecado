@@ -2675,3 +2675,43 @@ a.btn-copy {
   font-weight: 400;
   letter-spacing: 0;
 }
+
+/* Bebidas: la botella/lata se ve entera en la miniatura, no recortada */
+#bebidas .product-thumb {
+  object-fit: contain;
+  padding: 3px;
+}
+
+.repeat-order {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 14px 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px dashed var(--dorado);
+}
+.repeat-order > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.repeat-order strong { color: var(--dorado); font-size: 15px; }
+.repeat-order span { color: #d8cfc5; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.cart-suggest { margin-top: 12px; }
+.cart-suggest-title { font-weight: 800; font-size: 14px; color: var(--dorado); margin-bottom: 6px; }
+.cart-suggest-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.cart-suggest-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1.5px dashed var(--dorado);
+  background: transparent;
+  color: #f3e8dc;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.cart-suggest-btn strong { color: var(--dorado); }
+.cart-suggest-btn:active { transform: scale(0.96); }
