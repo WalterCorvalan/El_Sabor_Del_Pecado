@@ -27,6 +27,7 @@
     tabAjustes: $("tabAjustes"),
     tabPedidos: $("tabPedidos"),
     tabStats: $("tabStats"),
+    tabClientes: $("tabClientes"),
     savebar: $("savebar"),
     saveBtn: $("saveBtn"),
     toast: $("toast")
@@ -206,8 +207,10 @@
     el.tabAjustes.classList.toggle("hidden", activeTab !== "ajustes");
     el.tabPedidos.classList.toggle("hidden", activeTab !== "pedidos");
     el.tabStats.classList.toggle("hidden", activeTab !== "stats");
+    el.tabClientes.classList.toggle("hidden", activeTab !== "clientes");
     if (activeTab === "pedidos" || activeTab === "stats") loadOrders();
     if (activeTab === "stats") loadVisits();
+    if (activeTab === "clientes") loadCustomers();
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
@@ -1720,6 +1723,136 @@
     if (e.target.id !== "closingDate" || !e.target.value) return;
     closingDate = e.target.value;
     renderStats();
+  });
+
+  // ---------------- Clientes ----------------
+  // Un cliente por teléfono (sin repetidos), armado con TODOS los pedidos guardados.
+  let customers = [];
+  let customersLoaded = false;
+  let customersFilter = "";
+
+  function phoneKey(phone) {
+    return String(phone || "").replace(/\D/g, "").slice(-10);
+  }
+
+  function buildCustomers(list) {
+    const map = new Map();
+    for (const o of list) {
+      const raw = o.customer && o.customer.phone;
+      const key = phoneKey(raw);
+      if (!key) continue;
+      const time = new Date(o.createdAt).getTime() || 0;
+      let c = map.get(key);
+      if (!c) {
+        c = { key, phone: raw, name: (o.customer && o.customer.name) || "", orders: 0, spent: 0, last: 0 };
+        map.set(key, c);
+      }
+      if (o.status !== "cancelado") {
+        c.orders += 1;
+        c.spent += Number(o.total) || 0;
+      }
+      if (time >= c.last) {
+        c.last = time;
+        c.phone = raw;
+        c.name = (o.customer && o.customer.name) || c.name;
+      }
+    }
+    return [...map.values()].sort((a, b) => b.last - a.last);
+  }
+
+  function customerDate(ms) {
+    return ms ? new Date(ms).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "-";
+  }
+
+  async function loadCustomers() {
+    if (!token) return;
+    if (!customersLoaded) el.tabClientes.innerHTML = '<div class="empty-box">Cargando clientes...</div>';
+    try {
+      const res = await fetch("/api/orders-list?all=1", { cache: "no-store", headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) {
+        logout("Tu sesión expiró, ingresá de nuevo");
+        return;
+      }
+      if (!res.ok) throw new Error("orders-list " + res.status);
+      const data = await res.json();
+      customers = buildCustomers(data.orders || []);
+      customersLoaded = true;
+      renderCustomers();
+    } catch (err) {
+      console.error(err);
+      el.tabClientes.innerHTML = '<div class="empty-box">No se pudieron cargar los clientes. Probá de nuevo.</div>';
+    }
+  }
+
+  function visibleCustomers() {
+    if (!customersFilter) return customers;
+    const q = normalize(customersFilter);
+    const digits = customersFilter.replace(/\D/g, "");
+    return customers.filter((c) => normalize(c.name).includes(q) || (digits && String(c.phone).replace(/\D/g, "").includes(digits)));
+  }
+
+  function renderCustomerRows() {
+    const list = visibleCustomers();
+    document.getElementById("customersCount").textContent = `${list.length} de ${customers.length} clientes`;
+    document.getElementById("customersRows").innerHTML = list
+      .map(
+        (c) => `
+        <div class="card" style="padding:12px 14px;margin-bottom:8px;">
+          <div class="order-head">
+            <strong>${esc(c.name || "Sin nombre")}</strong>
+            <span class="order-total">${money(c.spent)}</span>
+          </div>
+          <div class="order-pay">
+            <a href="tel:${esc(String(c.phone).replace(/\D/g, ""))}">${esc(c.phone)}</a>
+            · ${c.orders} ${c.orders === 1 ? "pedido" : "pedidos"} · último: ${customerDate(c.last)}
+          </div>
+          <div class="order-actions">
+            <a class="btn btn-sm" href="https://wa.me/${esc(waNumber(c.phone))}" target="_blank" rel="noopener">WhatsApp</a>
+          </div>
+        </div>`
+      )
+      .join("") || '<div class="empty-box">No hay clientes que coincidan.</div>';
+  }
+
+  function renderCustomers() {
+    if (!customers.length) {
+      el.tabClientes.innerHTML = '<div class="empty-box">Todavía no hay clientes. Aparecen acá cuando entra el primer pedido.</div>';
+      return;
+    }
+    el.tabClientes.innerHTML = `
+      <div class="orders-bar">
+        <span id="customersCount" class="stats-note"></span>
+        <button class="btn btn-sm" id="customersCsv" type="button">Descargar Excel</button>
+      </div>
+      <div class="search"><input type="search" id="customersSearch" placeholder="Buscar por nombre o teléfono..." value="${esc(customersFilter)}" autocomplete="off" /></div>
+      <div id="customersRows"></div>`;
+    renderCustomerRows();
+  }
+
+  // CSV con ";" y BOM: Excel en español lo abre directo, con columnas y buscable.
+  function downloadCustomersCsv() {
+    const cell = (v) => '"' + String(v).replace(/"/g, '""') + '"';
+    const rows = [["Nombre", "Teléfono", "Pedidos", "Último pedido", "Total gastado"]].concat(
+      visibleCustomers().map((c) => [c.name, String(c.phone).replace(/\D/g, ""), c.orders, customerDate(c.last), c.spent])
+    );
+    const csv = "\uFEFF" + rows.map((r) => r.map(cell).join(";")).join("\r\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "clientes-el-sabor-del-pecado.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  el.tabClientes.addEventListener("input", (e) => {
+    if (e.target.id !== "customersSearch") return;
+    customersFilter = e.target.value.trim();
+    renderCustomerRows();
+  });
+  el.tabClientes.addEventListener("click", (e) => {
+    if (e.target.closest("#customersCsv")) downloadCustomersCsv();
   });
 
   // ---------------- Estadísticas ----------------
