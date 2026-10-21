@@ -3,7 +3,8 @@
 // para la imagen, y esa URL se arma con el dominio desde el que les respondemos,
 // así sigue andando si más adelante se cambia a un dominio propio.
 const TITLE = "El Sabor del Pecado | Sandwichería Gourmet";
-const DESCRIPTION = "Sándwiches, platos y empanadas gourmet. Mirá el menú y pedí online.";
+const DESCRIPTION =
+  "Sándwiches gourmet de vacío, bondiola y osobuco, platos y empanadas. Mirá el menú y pedí online con envío a domicilio.";
 
 function escapeAttr(value) {
   return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));

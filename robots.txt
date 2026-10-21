@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /api/
+Disallow: /seguimiento.html
+Disallow: /ticket-prueba.html
+
+Sitemap: https://el-sabor-del-pecado.vercel.app/sitemap.xml
