@@ -63,6 +63,7 @@ function product(id, name, description, image, variants = [], price = 0, extras 
 
 // Datos de la cuenta de Mercado Pago a la que transfieren los clientes.
 // Bebidas nuevas (Levité) y fotos/descripciones actualizadas de las gaseosas de 600 ml.
+const LAUNCH_TEXT = "Arrancamos el 7 de noviembre";
 const LEVITE_PRICE = 2000;
 const GASEOSA_PRICE = 2800;
 const CERVEZA_PRICE = 4200;
@@ -97,7 +98,7 @@ const TRANSFER_DATA = {
 // se guardó antes de que existieran las fotos y los precios actuales), catalog-get lo reemplaza
 // UNA vez por el menú inicial, conservando los ajustes (WhatsApp, horarios, envío, etc.).
 // Subir este número a propósito pisa los cambios hechos en el admin: solo hacerlo si se quiere eso.
-const MENU_VERSION = 12;
+const MENU_VERSION = 13;
 
 function defaultCatalog() {
   return {
@@ -107,7 +108,7 @@ function defaultCatalog() {
     // Ajustes de entrega y pago. Todo apagado hasta que el dueño lo active desde el admin.
     pickup: { enabled: false },
     // Cartel sobre la portada (por ejemplo la fecha de inicio). Se edita en Admin, Ajustes.
-    announcement: { enabled: false, text: "" },
+    announcement: { enabled: true, text: LAUNCH_TEXT },
     trackingEnabled: false,
     payment: { ...TRANSFER_DATA, mercadopagoEnabled: false },
     categories: [
@@ -496,6 +497,16 @@ function patchToV12(stored) {
   return c;
 }
 
+// Versión 12 -> 13: se prende el cartel de la portada con la fecha de inicio, salvo que el dueño
+// ya haya cargado su propio texto desde el admin.
+function patchToV13(stored) {
+  const c = JSON.parse(JSON.stringify(stored));
+  const a = c.announcement;
+  if (!a || !String(a.text || "").trim()) c.announcement = { enabled: true, text: LAUNCH_TEXT };
+  c.menuVersion = 13;
+  return c;
+}
+
 // Ajustes que no son del menú y se conservan al reemplazar el menú guardado.
 function migrateCatalog(stored) {
   if (stored && stored.menuVersion >= 2 && stored.menuVersion < MENU_VERSION) {
@@ -510,6 +521,7 @@ function migrateCatalog(stored) {
     if (c.menuVersion === 9) c = patchToV10(c);
     if (c.menuVersion === 10) c = patchToV11(c);
     if (c.menuVersion === 11) c = patchToV12(c);
+    if (c.menuVersion === 12) c = patchToV13(c);
     return c;
   }
   const fresh = defaultCatalog();
