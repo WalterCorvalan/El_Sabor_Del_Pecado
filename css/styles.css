@@ -2715,3 +2715,34 @@ a.btn-copy {
 }
 .cart-suggest-btn strong { color: var(--dorado); }
 .cart-suggest-btn:active { transform: scale(0.96); }
+
+/* Cartel de fecha de inicio sobre la portada: late suavemente para llamar la atención */
+.launch-badge {
+  position: absolute;
+  left: 50%;
+  bottom: 9%;
+  z-index: 3;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: var(--dorado);
+  color: #2a0a0a;
+  font-family: var(--font-display, inherit);
+  font-size: 18px;
+  letter-spacing: 0.4px;
+  text-align: center;
+  line-height: 1.2;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(255, 193, 7, 0.28);
+  animation: launch-pulse 1.8s ease-in-out infinite;
+}
+.launch-badge.hidden { display: none; }
+
+@keyframes launch-pulse {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
+  50% { transform: translateX(-50%) scale(1.07); opacity: 0.82; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launch-badge { animation: none; }
+}

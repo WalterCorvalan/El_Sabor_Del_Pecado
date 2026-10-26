@@ -424,6 +424,17 @@
     const open = catalog.storeOpen !== false;
     el.tabAjustes.innerHTML = `
       <div class="card">
+        <h2>Cartel de la portada</h2>
+        <p class="hint">Un cartel que late sobre la foto de inicio, por ejemplo la fecha de apertura: "Arrancamos el 7 de noviembre". Apagalo cuando ya no haga falta.</p>
+        <div class="field">
+          <label class="switch"><input type="checkbox" id="announcementEnabled" ${catalog.announcement && catalog.announcement.enabled ? "checked" : ""} /><span class="slider"></span> <span>Mostrar el cartel</span></label>
+        </div>
+        <div class="field">
+          <label for="announcementText">Texto del cartel</label>
+          <input type="text" id="announcementText" maxlength="60" value="${esc((catalog.announcement && catalog.announcement.text) || "")}" placeholder="Ej: Arrancamos el 7 de noviembre" />
+        </div>
+      </div>
+      <div class="card">
         <h2>Pedidos</h2>
         <p class="hint">Si cerrás el local, el sitio muestra un aviso y no deja agregar productos ni confirmar pedidos.</p>
         <div class="field">
@@ -538,6 +549,24 @@
       toast("Error de conexión", "error");
     } finally {
       btn.disabled = false;
+    }
+  });
+
+  function ensureAnnouncement() {
+    if (!catalog.announcement) catalog.announcement = { enabled: false, text: "" };
+    return catalog.announcement;
+  }
+
+  el.tabAjustes.addEventListener("change", (e) => {
+    if (e.target.id === "announcementEnabled") {
+      ensureAnnouncement().enabled = e.target.checked;
+      markDirty();
+    }
+  });
+  el.tabAjustes.addEventListener("input", (e) => {
+    if (e.target.id === "announcementText") {
+      ensureAnnouncement().text = e.target.value.trim();
+      markDirty();
     }
   });
 

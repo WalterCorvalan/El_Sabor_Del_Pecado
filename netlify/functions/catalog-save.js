@@ -70,6 +70,13 @@ function validateCheckoutSettings(catalog) {
   return null;
 }
 
+function validateAnnouncement(a) {
+  if (a === undefined) return null;
+  if (!a || typeof a !== "object" || typeof a.enabled !== "boolean") return "El cartel de la portada es inválido";
+  if (typeof a.text !== "string" || a.text.length > 60) return "El texto del cartel puede tener hasta 60 letras";
+  return null;
+}
+
 function validatePrepTime(prepTime) {
   if (prepTime === undefined) return null;
   if (!prepTime || typeof prepTime !== "object") return "El tiempo estimado es inválido";
@@ -95,6 +102,7 @@ function validateCatalog(catalog) {
     validateSchedule(catalog.schedule) ||
     validateDelivery(catalog.delivery) ||
     validatePrepTime(catalog.prepTime) ||
+    validateAnnouncement(catalog.announcement) ||
     validateCheckoutSettings(catalog);
   if (settingsError) return settingsError;
 

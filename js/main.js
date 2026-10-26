@@ -332,6 +332,16 @@
     });
   }
 
+  // Cartel con la fecha de inicio (se carga desde Admin, Ajustes). Apagado = no se muestra nada.
+  function renderLaunchBadge() {
+    const badge = document.getElementById("launchBadge");
+    if (!badge) return;
+    const a = state.catalog && state.catalog.announcement;
+    const text = a && a.enabled === true && typeof a.text === "string" ? a.text.trim() : "";
+    badge.textContent = text;
+    badge.classList.toggle("hidden", !text);
+  }
+
   function renderStoreBanner() {
     const banner = document.getElementById("storeBanner");
     if (!banner) return;
@@ -355,6 +365,7 @@
   function renderCatalog() {
     el.loadingState.remove();
     renderStoreBanner();
+    renderLaunchBadge();
 
     if (!state.catalog.categories.length) {
       el.catalog.innerHTML = '<div class="empty-state">Todavía no hay productos cargados.</div>';
