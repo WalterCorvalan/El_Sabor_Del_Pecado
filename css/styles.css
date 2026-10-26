@@ -2716,33 +2716,72 @@ a.btn-copy {
 .cart-suggest-btn strong { color: var(--dorado); }
 .cart-suggest-btn:active { transform: scale(0.96); }
 
-/* Cartel de fecha de inicio sobre la portada: late suavemente para llamar la atención */
+/* Cartel de fecha de inicio sobre la portada: vidrio oscuro con borde dorado, ícono de calendario y brillo suave */
 .launch-badge {
   position: absolute;
   left: 50%;
-  bottom: 9%;
+  bottom: 8%;
   z-index: 3;
   transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
   max-width: calc(100% - 32px);
-  padding: 10px 20px;
+  padding: 9px 18px 9px 10px;
   border-radius: 999px;
-  background: var(--dorado);
-  color: #2a0a0a;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(20, 12, 8, 0.86), rgba(48, 22, 10, 0.86));
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid var(--dorado);
+  color: #fff4dc;
   font-family: var(--font-display, inherit);
-  font-size: 18px;
-  letter-spacing: 0.4px;
-  text-align: center;
+  font-size: 16px;
+  letter-spacing: 0.5px;
   line-height: 1.2;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(255, 193, 7, 0.28);
-  animation: launch-pulse 1.8s ease-in-out infinite;
+  text-align: left;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55);
+  animation: launch-glow 2.4s ease-in-out infinite;
 }
 .launch-badge.hidden { display: none; }
 
-@keyframes launch-pulse {
-  0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
-  50% { transform: translateX(-50%) scale(1.07); opacity: 0.82; }
+.launch-badge-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--dorado);
+  color: #2a0a0a;
+}
+.launch-badge-icon svg { width: 18px; height: 18px; }
+
+/* Brillo que cruza el cartel de vez en cuando */
+.launch-badge::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 38%;
+  left: -50%;
+  background: linear-gradient(100deg, transparent, rgba(255, 224, 140, 0.35), transparent);
+  transform: skewX(-20deg);
+  animation: launch-shine 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes launch-glow {
+  0%, 100% { box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55), 0 0 0 0 rgba(255, 193, 7, 0.0); }
+  50% { box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55), 0 0 22px 4px rgba(255, 193, 7, 0.38); }
+}
+
+@keyframes launch-shine {
+  0%, 55% { left: -50%; }
+  100% { left: 130%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .launch-badge { animation: none; }
+  .launch-badge, .launch-badge::after { animation: none; }
 }

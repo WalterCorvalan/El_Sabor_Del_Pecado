@@ -338,7 +338,9 @@
     if (!badge) return;
     const a = state.catalog && state.catalog.announcement;
     const text = a && a.enabled === true && typeof a.text === "string" ? a.text.trim() : "";
-    badge.textContent = text;
+    badge.innerHTML = text
+      ? `<span class="launch-badge-icon" aria-hidden="true">${svg('<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/>')}</span><span class="launch-badge-text">${escapeHtml(text)}</span>`
+      : "";
     badge.classList.toggle("hidden", !text);
   }
 
