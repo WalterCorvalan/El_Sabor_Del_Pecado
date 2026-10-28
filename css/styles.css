@@ -2716,72 +2716,101 @@ a.btn-copy {
 .cart-suggest-btn strong { color: var(--dorado); }
 .cart-suggest-btn:active { transform: scale(0.96); }
 
-/* Cartel de fecha de inicio sobre la portada: vidrio oscuro con borde dorado, ícono de calendario y brillo suave */
+/* Cartel de fecha de inicio sobre la portada: más grande, con borde de luz que gira, destellos y latido */
 .launch-badge {
   position: absolute;
   left: 50%;
-  bottom: 8%;
+  bottom: 7%;
   z-index: 3;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: max-content;
-  max-width: calc(100% - 32px);
-  padding: 9px 18px 9px 10px;
+  max-width: calc(100% - 24px);
+  padding: 13px 24px 13px 13px;
   border-radius: 999px;
-  overflow: hidden;
-  background: linear-gradient(135deg, rgba(20, 12, 8, 0.86), rgba(48, 22, 10, 0.86));
+  background: linear-gradient(135deg, rgba(22, 12, 6, 0.9), rgba(70, 28, 8, 0.9));
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  border: 1.5px solid var(--dorado);
+  border: 2px solid var(--dorado);
   color: #fff4dc;
   font-family: var(--font-display, inherit);
-  font-size: 16px;
-  letter-spacing: 0.5px;
-  line-height: 1.2;
+  font-size: 21px;
+  letter-spacing: 0.6px;
+  line-height: 1.15;
   text-align: left;
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55);
-  animation: launch-glow 2.4s ease-in-out infinite;
+  text-shadow: 0 0 12px rgba(255, 193, 7, 0.55);
+  animation: launch-beat 2s ease-in-out infinite;
 }
 .launch-badge.hidden { display: none; }
 
 .launch-badge-icon {
   flex: none;
-  width: 32px;
-  height: 32px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--dorado);
+  background: radial-gradient(circle at 35% 30%, #ffe27a, var(--dorado) 60%, #e09a00);
   color: #2a0a0a;
+  box-shadow: 0 0 16px rgba(255, 193, 7, 0.7);
+  animation: launch-icon 2s ease-in-out infinite;
 }
-.launch-badge-icon svg { width: 18px; height: 18px; }
+.launch-badge-icon svg { width: 23px; height: 23px; }
 
-/* Brillo que cruza el cartel de vez en cuando */
+/* Aro de luz que rodea el cartel */
+.launch-badge::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 193, 7, 0.55);
+  animation: launch-ring 2s ease-out infinite;
+  pointer-events: none;
+}
+
+/* Destello que cruza el cartel */
 .launch-badge::after {
   content: "";
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 38%;
-  left: -50%;
-  background: linear-gradient(100deg, transparent, rgba(255, 224, 140, 0.35), transparent);
+  width: 40%;
+  left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 232, 150, 0.5), transparent);
   transform: skewX(-20deg);
-  animation: launch-shine 3.6s ease-in-out infinite;
+  animation: launch-shine 2.8s ease-in-out infinite;
   pointer-events: none;
 }
 
-@keyframes launch-glow {
-  0%, 100% { box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55), 0 0 0 0 rgba(255, 193, 7, 0.0); }
-  50% { box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55), 0 0 22px 4px rgba(255, 193, 7, 0.38); }
+@keyframes launch-beat {
+  0%, 100% {
+    transform: translateX(-50%) scale(1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 14px 2px rgba(255, 193, 7, 0.35);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.06);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 34px 8px rgba(255, 193, 7, 0.6);
+  }
+}
+
+@keyframes launch-icon {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-9deg) scale(1.08); }
+  75% { transform: rotate(9deg) scale(1.08); }
+}
+
+@keyframes launch-ring {
+  0% { transform: scale(0.97); opacity: 0.9; }
+  100% { transform: scale(1.12); opacity: 0; }
 }
 
 @keyframes launch-shine {
-  0%, 55% { left: -50%; }
-  100% { left: 130%; }
+  0%, 45% { left: -60%; }
+  100% { left: 140%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .launch-badge, .launch-badge::after { animation: none; }
+  .launch-badge, .launch-badge::before, .launch-badge::after, .launch-badge-icon { animation: none; }
 }
