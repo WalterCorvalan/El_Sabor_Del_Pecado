@@ -2720,15 +2720,15 @@ a.btn-copy {
 .launch-badge {
   position: absolute;
   left: 50%;
-  bottom: 7%;
+  bottom: 6%;
   z-index: 3;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 12px;
   width: max-content;
-  max-width: calc(100% - 24px);
-  padding: 13px 24px 13px 13px;
+  max-width: calc(100% - 20px);
+  padding: 16px 28px 16px 16px;
   border-radius: 999px;
   background: linear-gradient(135deg, rgba(22, 12, 6, 0.9), rgba(70, 28, 8, 0.9));
   -webkit-backdrop-filter: blur(10px);
@@ -2736,9 +2736,9 @@ a.btn-copy {
   border: 2px solid var(--dorado);
   color: #fff4dc;
   font-family: var(--font-display, inherit);
-  font-size: 21px;
+  font-size: clamp(23px, 6.6vw, 30px);
   letter-spacing: 0.6px;
-  line-height: 1.15;
+  line-height: 1.12;
   text-align: left;
   text-shadow: 0 0 12px rgba(255, 193, 7, 0.55);
   animation: launch-beat 2s ease-in-out infinite;
@@ -2747,8 +2747,8 @@ a.btn-copy {
 
 .launch-badge-icon {
   flex: none;
-  width: 42px;
-  height: 42px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -2757,7 +2757,7 @@ a.btn-copy {
   box-shadow: 0 0 16px rgba(255, 193, 7, 0.7);
   animation: launch-icon 2s ease-in-out infinite;
 }
-.launch-badge-icon svg { width: 23px; height: 23px; }
+.launch-badge-icon svg { width: 29px; height: 29px; }
 
 /* Aro de luz que rodea el cartel */
 .launch-badge::before {
@@ -2814,3 +2814,5 @@ a.btn-copy {
 @media (prefers-reduced-motion: reduce) {
   .launch-badge, .launch-badge::before, .launch-badge::after, .launch-badge-icon { animation: none; }
 }
+
+.launch-badge-text { text-wrap: balance; }
