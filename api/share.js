@@ -14,7 +14,7 @@ module.exports = function handler(req, res) {
   const proto = req.headers["x-forwarded-proto"] || "https";
   const host = req.headers["x-forwarded-host"] || req.headers.host;
   const origin = `${proto}://${host}`;
-  const image = `${origin}/images/og-share.jpg`;
+  const image = `${origin}/images/og-inauguracion.jpg`;
 
   const html = `<!DOCTYPE html>
 <html lang="es-AR">
