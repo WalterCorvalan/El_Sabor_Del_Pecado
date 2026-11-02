@@ -64,6 +64,7 @@ function product(id, name, description, image, variants = [], price = 0, extras 
 // Datos de la cuenta de Mercado Pago a la que transfieren los clientes.
 // Bebidas nuevas (Levité) y fotos/descripciones actualizadas de las gaseosas de 600 ml.
 const LAUNCH_TEXT = "Arrancamos el 7 de noviembre";
+const INAUGURATION_TEXT = "Inauguramos el miércoles 11 de noviembre, por la noche";
 const LEVITE_PRICE = 2000;
 const GASEOSA_PRICE = 2800;
 const CERVEZA_PRICE = 4200;
@@ -101,7 +102,7 @@ const TRANSFER_DATA = {
 // se guardó antes de que existieran las fotos y los precios actuales), catalog-get lo reemplaza
 // UNA vez por el menú inicial, conservando los ajustes (WhatsApp, horarios, envío, etc.).
 // Subir este número a propósito pisa los cambios hechos en el admin: solo hacerlo si se quiere eso.
-const MENU_VERSION = 14;
+const MENU_VERSION = 15;
 
 function defaultCatalog() {
   return {
@@ -111,7 +112,7 @@ function defaultCatalog() {
     // Ajustes de entrega y pago. Todo apagado hasta que el dueño lo active desde el admin.
     pickup: { enabled: false },
     // Cartel sobre la portada (por ejemplo la fecha de inicio). Se edita en Admin, Ajustes.
-    announcement: { enabled: true, text: LAUNCH_TEXT },
+    announcement: { enabled: true, text: INAUGURATION_TEXT },
     trackingEnabled: false,
     payment: { ...TRANSFER_DATA, mercadopagoEnabled: false },
     categories: [
@@ -523,6 +524,17 @@ function patchToV14(stored) {
   return c;
 }
 
+// Versión 14 -> 15: nueva fecha de inauguración en el cartel de la portada. Solo se cambia si el
+// cartel tiene todavía el texto anterior o está vacío; si el dueño puso uno propio, se respeta.
+function patchToV15(stored) {
+  const c = JSON.parse(JSON.stringify(stored));
+  const a = c.announcement;
+  const text = a ? String(a.text || "").trim() : "";
+  if (!a || !text || text === LAUNCH_TEXT) c.announcement = { enabled: a ? a.enabled !== false : true, text: INAUGURATION_TEXT };
+  c.menuVersion = 15;
+  return c;
+}
+
 // Ajustes que no son del menú y se conservan al reemplazar el menú guardado.
 function migrateCatalog(stored) {
   if (stored && stored.menuVersion >= 2 && stored.menuVersion < MENU_VERSION) {
@@ -539,6 +551,7 @@ function migrateCatalog(stored) {
     if (c.menuVersion === 11) c = patchToV12(c);
     if (c.menuVersion === 12) c = patchToV13(c);
     if (c.menuVersion === 13) c = patchToV14(c);
+    if (c.menuVersion === 14) c = patchToV15(c);
     return c;
   }
   const fresh = defaultCatalog();

@@ -425,7 +425,7 @@
     el.tabAjustes.innerHTML = `
       <div class="card">
         <h2>Cartel de la portada</h2>
-        <p class="hint">Un cartel que late sobre la foto de inicio, por ejemplo la fecha de apertura: "Arrancamos el 7 de noviembre". Apagalo cuando ya no haga falta.</p>
+        <p class="hint">Un cartel que late sobre la foto de inicio, por ejemplo la fecha de apertura: "Inauguramos el miércoles 11 de noviembre". Apagalo cuando ya no haga falta.</p>
         <div class="field">
           <label class="switch"><input type="checkbox" id="announcementEnabled" ${catalog.announcement && catalog.announcement.enabled ? "checked" : ""} /><span class="slider"></span> <span>Mostrar el cartel</span></label>
         </div>
