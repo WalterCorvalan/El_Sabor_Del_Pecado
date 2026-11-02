@@ -68,6 +68,9 @@ const LEVITE_PRICE = 2000;
 const GASEOSA_PRICE = 2800;
 const CERVEZA_PRICE = 4200;
 const PLATO_PRICE = 25000;
+// Precios vigentes desde la versión 14 del menú (bajada de precios pedida por el dueño).
+const SANDWICH_PRICE_V14 = 20000;
+const PLATO_PRICE_V14 = 23000;
 const SANDWICH_NOTE = "incluye guarnición de papas españolas";
 const PLATO_NOTE = "incluye guarnición a elección";
 const EMPANADAS_NOTE = "la docena $33.000";
@@ -98,7 +101,7 @@ const TRANSFER_DATA = {
 // se guardó antes de que existieran las fotos y los precios actuales), catalog-get lo reemplaza
 // UNA vez por el menú inicial, conservando los ajustes (WhatsApp, horarios, envío, etc.).
 // Subir este número a propósito pisa los cambios hechos en el admin: solo hacerlo si se quiere eso.
-const MENU_VERSION = 13;
+const MENU_VERSION = 14;
 
 function defaultCatalog() {
   return {
@@ -123,7 +126,7 @@ function defaultCatalog() {
             "Vacío de ternera horneado a lenta cocción en reducción de vino tinto desmechado con hortalizas de estación y hierbas aromáticas, y lluvia de queso provolone.",
             "images/menu/sandwich-vacio.webp",
             [panVariant()],
-            22000
+            SANDWICH_PRICE_V14
           ),
           product(
             "sandwich-pollo-funghi",
@@ -131,7 +134,7 @@ function defaultCatalog() {
             "Pechugas de pollo doradas y desmechadas en salsa de champiñones, portobellos, verdeo, manteca y crema.",
             "images/menu/sandwich-pollo-funghi.webp",
             [panVariant()],
-            22000
+            SANDWICH_PRICE_V14
           ),
           product(
             "sandwich-bondiola-barbacoa",
@@ -139,7 +142,7 @@ function defaultCatalog() {
             "Bondiola marinada y cocida en reducción de cerveza negra, ajo, salsa barbacoa y rub seco de pimentón.",
             "images/menu/sandwich-bondiola-barbacoa.webp",
             [panVariant()],
-            22000
+            SANDWICH_PRICE_V14
           ),
           product(
             "sandwich-osobuco-malbec",
@@ -147,7 +150,7 @@ function defaultCatalog() {
             "Osobuco al disco cocido en vino Malbec, entre cebollas, zanahoria, ajo, apio, pimentón y caldo de verduras, desmechado.",
             "images/menu/sandwich-osobuco-malbec.webp",
             [panVariant()],
-            22000
+            SANDWICH_PRICE_V14
           ),
           product(
             "sandwich-bondiola-honey-mustard",
@@ -155,7 +158,7 @@ function defaultCatalog() {
             "Bondiola cocida a baja temperatura durante varias horas con cebollas caramelizadas, mostaza, miel y finas hierbas.",
             "images/menu/sandwich-bondiola-honey-mustard.webp",
             [panVariant()],
-            22000
+            SANDWICH_PRICE_V14
           )
         ]
       },
@@ -170,7 +173,7 @@ function defaultCatalog() {
             "Lonjas de vacío de ternera horneado a lenta cocción en reducción de vino tinto con hortalizas de estación y hierbas aromáticas. Guarnición a elección.",
             "images/menu/plato-vacio.webp",
             [guarnicionVariant()],
-            25000
+            PLATO_PRICE_V14
           ),
           product(
             "plato-pollo-funghi",
@@ -178,7 +181,7 @@ function defaultCatalog() {
             "Pollo deshuesado dorado en salsa de champiñones, portobellos, verdeo, manteca y crema. Guarnición a elección.",
             "images/menu/plato-pollo-funghi.webp",
             [guarnicionVariant()],
-            25000
+            PLATO_PRICE_V14
           ),
           product(
             "plato-bondiola-barbacoa",
@@ -186,7 +189,7 @@ function defaultCatalog() {
             "Rodajas de bondiola marinada y cocida en reducción de cerveza negra, ajo, salsa barbacoa y rub seco de pimentón. Guarnición a elección.",
             "images/menu/plato-bondiola-barbacoa.webp",
             [guarnicionVariant()],
-            25000
+            PLATO_PRICE_V14
           ),
           product(
             "plato-osobuco-malbec",
@@ -194,7 +197,7 @@ function defaultCatalog() {
             "Rodajas de osobuco al disco cocido en vino Malbec, entre cebollas, zanahoria, ajo, apio, pimentón y caldo de verduras. Guarnición a elección.",
             "images/menu/plato-osobuco-malbec.webp",
             [guarnicionVariant()],
-            25000
+            PLATO_PRICE_V14
           ),
           product(
             "plato-bondiola-honey-mustard",
@@ -202,7 +205,7 @@ function defaultCatalog() {
             "Rodajas de bondiola cocida a baja temperatura durante varias horas con cebollas caramelizadas, mostaza, miel y finas hierbas. Guarnición a elección.",
             "images/menu/plato-bondiola-honey-mustard.webp",
             [guarnicionVariant()],
-            25000
+            PLATO_PRICE_V14
           )
         ]
       },
@@ -507,6 +510,19 @@ function patchToV13(stored) {
   return c;
 }
 
+// Versión 13 -> 14: bajan los precios. Todos los sándwiches a $20.000 y todos los platos a $23.000.
+function patchToV14(stored) {
+  const c = JSON.parse(JSON.stringify(stored));
+  for (const category of c.categories || []) {
+    for (const p of category.products || []) {
+      if (category.id === "sandwiches") p.price = SANDWICH_PRICE_V14;
+      if (category.id === "al-plato") p.price = PLATO_PRICE_V14;
+    }
+  }
+  c.menuVersion = 14;
+  return c;
+}
+
 // Ajustes que no son del menú y se conservan al reemplazar el menú guardado.
 function migrateCatalog(stored) {
   if (stored && stored.menuVersion >= 2 && stored.menuVersion < MENU_VERSION) {
@@ -522,6 +538,7 @@ function migrateCatalog(stored) {
     if (c.menuVersion === 10) c = patchToV11(c);
     if (c.menuVersion === 11) c = patchToV12(c);
     if (c.menuVersion === 12) c = patchToV13(c);
+    if (c.menuVersion === 13) c = patchToV14(c);
     return c;
   }
   const fresh = defaultCatalog();
