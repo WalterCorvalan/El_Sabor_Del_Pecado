@@ -216,8 +216,6 @@
     el.sideNav.classList.remove("open");
     el.overlay.classList.remove("open");
   }
-  el.menuToggle.addEventListener("click", openSideNav);
-  el.miniMenuToggle.addEventListener("click", openSideNav);
   el.sideNavClose.addEventListener("click", closeSideNav);
   el.overlay.addEventListener("click", () => {
     closeSideNav();
